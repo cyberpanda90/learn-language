@@ -17,6 +17,7 @@ const TRANSLATIONS = {
 		lessonMode: 'Lesson Mode',
 		chatMode: 'Chat Mode',
 		readyToPractice: 'Ready to practice',
+		readyToPracticeTitle: 'You can start practicing now!',
 		startConversationHelp:
 			"Start a conversation and I'll help you learn with personalized feedback!",
 		englishTranslation: 'English translation',
@@ -51,12 +52,13 @@ const TRANSLATIONS = {
 		languageTutorTitle: 'Jazykový Tutor',
 		lessonMode: 'Režim Lekce',
 		chatMode: 'Režim Konverzace',
-		readyToPractice: 'Připraven/a procvičovat',
+		readyToPractice: 'Připraven procvičovat',
+		readyToPracticeTitle: 'Můžete začít procvičovat!',
 		startConversationHelp:
 			'Začněte konverzaci a já vám pomohu se učit s personalizovanou zpětnou vazbou!',
 		englishTranslation: 'Český překlad',
 		tutorThinking: 'Tutor přemýšlí...',
-		typeMessagePlaceholder: 'Napište zprávu v',
+		typeMessagePlaceholder: 'Napište zprávu',
 		progressOverview: 'Přehled Pokroku',
 		messages: 'Zprávy:',
 		vocabulary: 'Slovní zásoba:',
@@ -422,12 +424,26 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 
 			const parsedResponse = await response.json()
 
-			const tutorMessage = {
-				id: Date.now() + 1,
-				text: parsedResponse.tutorResponse,
-				englishTranslation: parsedResponse.englishTranslation,
-				sender: 'tutor',
-				timestamp: new Date(),
+			let tutorMessage
+
+			if (showLessonMode) {
+				tutorMessage = {
+					id: Date.now() + 1,
+					text: parsedResponse.tutorResponse,
+					continueConversation: parsedResponse.continueConversation,
+					sender: 'tutor',
+					timestamp: new Date(),
+					isLessonMode: true,
+				}
+			} else {
+				tutorMessage = {
+					id: Date.now() + 1,
+					text: parsedResponse.tutorResponse,
+					continueConversation: parsedResponse.englishTranslation,
+					sender: 'tutor',
+					timestamp: new Date(),
+					isLessonMode: false,
+				}
 			}
 
 			setMessages((prev) => [...prev, tutorMessage])
@@ -653,7 +669,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 			<div className="flex-1 flex flex-col">
 				{/* Header */}
 				<div className="bg-white border-b border-gray-200 p-4">
-					<div className="flex items-center justify-between">
+					<div className="flex justify-between items-center">
 						<div className="flex items-center space-x-4">
 							<div className="flex items-center space-x-2">
 								<BookOpen className="h-6 w-6 text-blue-600" />
@@ -662,46 +678,66 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 								</h1>
 							</div>
 
+							{/* Language Selection */}
 							<select
 								value={selectedLanguage}
 								onChange={(e) =>
 									handleLanguageChange(e.target.value)
 								}
-								className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 							>
 								{Object.entries(languages).map(
-									([code, lang]) => (
-										<option key={code} value={code}>
+									([key, lang]) => (
+										<option key={key} value={key}>
 											{lang.flag} {lang.name}
 										</option>
 									)
 								)}
 							</select>
-
-							<div
-								className={`px-3 py-1 rounded-full text-sm font-medium ${getProficiencyColor(
-									userProfile.proficiencyLevel
-								)}`}
-							>
-								{userProfile.proficiencyLevel}
-							</div>
 						</div>
 
-						<div className="flex items-center space-x-2">
-							<button
-								onClick={() =>
-									setShowLessonMode(!showLessonMode)
-								}
-								className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-									showLessonMode
-										? 'bg-blue-600 text-white'
-										: 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-								}`}
-							>
+						{/* Mode Toggle */}
+						<div className="flex items-center space-x-3">
+							<span className="text-sm font-medium text-gray-700">
 								{showLessonMode
 									? t('lessonMode')
 									: t('chatMode')}
+							</span>
+							<button
+								onClick={() => {
+									setShowLessonMode(!showLessonMode)
+								}}
+								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+									showLessonMode
+										? 'bg-blue-600'
+										: 'bg-gray-200'
+								}`}
+							>
+								<span
+									className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+										showLessonMode
+											? 'translate-x-6'
+											: 'translate-x-1'
+									}`}
+								/>
 							</button>
+						</div>
+					</div>
+				</div>
+
+				{/* Status Bar */}
+				<div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center space-x-4">
+							<div className="flex items-center space-x-2">
+								<div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+								<span className="text-sm font-medium">
+									{t('readyToPractice')}
+								</span>
+							</div>
+						</div>
+						<div className="text-sm opacity-90">
+							{userProfile.proficiencyLevel}
 						</div>
 					</div>
 				</div>
@@ -709,13 +745,13 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 				{/* Messages */}
 				<div className="flex-1 overflow-y-auto p-4 space-y-4">
 					{messages.length === 0 && (
-						<div className="text-center py-8">
-							<div className="text-4xl mb-4">
-								{languages[selectedLanguage].flag}
+						<div className="text-center py-12">
+							<div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+								<MessageSquare className="h-8 w-8 text-blue-600" />
 							</div>
-							<h2 className="text-xl font-semibold text-gray-700 mb-2">
-								{t('readyToPractice')}{' '}
-								{languages[selectedLanguage].name}?
+
+							<h2 className="text-xl font-semibold text-gray-800 mb-2">
+								{t('readyToPracticeTitle')}
 							</h2>
 							<p className="text-gray-500">
 								{t('startConversationHelp')}
@@ -792,20 +828,18 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 
 					{isLoading && (
 						<div className="flex justify-start">
-							<div className="bg-white border border-gray-200 rounded-lg px-4 py-2">
+							<div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-gray-200">
 								<div className="flex items-center space-x-2">
-									<div className="flex space-x-1">
-										<div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-										<div
-											className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-											style={{ animationDelay: '0.1s' }}
-										></div>
-										<div
-											className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-											style={{ animationDelay: '0.2s' }}
-										></div>
-									</div>
-									<span className="text-sm text-gray-500">
+									<div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+									<div
+										className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+										style={{ animationDelay: '0.1s' }}
+									></div>
+									<div
+										className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+										style={{ animationDelay: '0.2s' }}
+									></div>
+									<span className="text-xs text-gray-600 ml-2">
 										{t('tutorThinking')}
 									</span>
 								</div>
@@ -825,9 +859,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							onKeyPress={(e) =>
 								e.key === 'Enter' && sendMessage()
 							}
-							placeholder={`${t('typeMessagePlaceholder')} ${
-								languages[selectedLanguage].name
-							}...`}
+							placeholder={`${t('typeMessagePlaceholder')}...`}
 							className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 							disabled={isLoading}
 						/>
@@ -874,31 +906,40 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 
 				{/* Learning Goals */}
 				<div className="p-4 border-b border-gray-200">
-					<div className="flex items-center justify-between mb-3">
+					<div className="flex justify-between items-center mb-3">
 						<h3 className="font-semibold text-gray-800 flex items-center">
 							<Target className="h-5 w-5 mr-2" />
 							{t('learningGoals')}
 						</h3>
 						<button
 							onClick={addCustomGoal}
-							className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+							className="text-blue-700 bg-blue-100 hover:bg-blue-200 text-xs font-medium rounded transition-colors"
 						>
 							{t('addGoal')}
 						</button>
 					</div>
-					<div className="space-y-2">
+					<div className="space-y-3">
 						{learningGoals.map((goal) => (
-							<div
-								key={goal.id}
-								className="p-2 bg-gray-50 rounded-md"
-							>
-								<div className="flex items-start justify-between">
-									<div className="flex-1">
+							<div key={goal.id} className="space-y-2">
+								<div className="flex items-start space-x-3">
+									<button
+										onClick={() =>
+											toggleGoalCompletion(goal.id)
+										}
+										className="mt-0.5 flex-shrink-0"
+									>
+										{goal.completed ? (
+											<CheckCircle className="h-4 w-4 text-green-600" />
+										) : (
+											<div className="h-4 w-4 border-2 border-gray-300 rounded-full"></div>
+										)}
+									</button>
+									<div className="flex-1 min-w-0">
 										<p
 											className={`text-sm ${
 												goal.completed
 													? 'line-through text-gray-500'
-													: 'text-gray-700'
+													: 'text-gray-800'
 											}`}
 										>
 											{goal.text}
@@ -908,9 +949,13 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 												<span>{t('progress')}</span>
 												<span>{goal.progress}%</span>
 											</div>
-											<div className="w-full bg-gray-200 rounded-full h-2">
+											<div className="w-full bg-gray-200 rounded-full h-1.5">
 												<div
-													className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+													className={`h-1.5 rounded-full transition-all duration-300 ${
+														goal.completed
+															? 'bg-green-500'
+															: 'bg-blue-500'
+													}`}
 													style={{
 														width: `${goal.progress}%`,
 													}}
@@ -918,18 +963,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 											</div>
 										</div>
 									</div>
-									<button
-										onClick={() =>
-											toggleGoalCompletion(goal.id)
-										}
-										className="ml-2 mt-1"
-									>
-										{goal.completed ? (
-											<CheckCircle className="h-4 w-4 text-green-600" />
-										) : (
-											<div className="h-4 w-4 border-2 border-gray-300 rounded-full"></div>
-										)}
-									</button>
 								</div>
 							</div>
 						))}
@@ -1113,56 +1146,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						</div>
 					</div>
 				)}
-
-				{/* Quick Stats */}
-				<div className="flex-1 p-4">
-					<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-						<BarChart3 className="h-5 w-5 mr-2" />
-						{t('learningStats')}
-					</h3>
-					<div className="space-y-3">
-						<div>
-							<p className="text-sm text-gray-600 mb-1">
-								{t('vocabularyGrowth')}
-							</p>
-							<div className="flex items-end space-x-1 h-8">
-								{progressStats.vocabularyGrowth
-									.slice(-5)
-									.map((value, idx) => (
-										<div
-											key={idx}
-											className="bg-blue-600 rounded-t"
-											style={{
-												height: `${
-													(value / 100) * 100
-												}%`,
-												width: '20%',
-											}}
-										></div>
-									))}
-							</div>
-						</div>
-						<div>
-							<p className="text-sm text-gray-600 mb-1">
-								{t('grammarAccuracy')}
-							</p>
-							<div className="flex items-end space-x-1 h-8">
-								{progressStats.grammarAccuracy
-									.slice(-5)
-									.map((value, idx) => (
-										<div
-											key={idx}
-											className="bg-green-600 rounded-t"
-											style={{
-												height: `${value}%`,
-												width: '20%',
-											}}
-										></div>
-									))}
-							</div>
-						</div>
-					</div>
-				</div>
 			</div>
 		</div>
 	)
