@@ -321,11 +321,22 @@ Respond with a JSON object in this exact format:
   "progressNotes": "Brief encouraging note about their progress"
 }
 
-Your entire response MUST be valid JSON only. DO NOT include any text outside the JSON structure.
-`
+Your entire response MUST be valid JSON only. DO NOT include any text outside the JSON structure.`
 
-			const response = await window.claude.complete(prompt)
-			const parsedResponse = JSON.parse(response)
+			// NOVÉ: Volání Vercel API místo window.claude.complete
+			const response = await fetch('/api/claude', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ prompt }),
+			})
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const parsedResponse = await response.json()
 
 			const tutorMessage = {
 				id: Date.now() + 1,
