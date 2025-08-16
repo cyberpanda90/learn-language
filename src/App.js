@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect, useRef } from 'react'
 import {
 	Send,
@@ -6,18 +5,50 @@ import {
 	Target,
 	TrendingUp,
 	MessageSquare,
+	Settings,
 	CheckCircle,
+	AlertCircle,
 	Star,
 	BarChart3,
 	Languages,
-	Mic,
-	MicOff,
-	Volume2,
-	VolumeX,
 } from 'lucide-react'
-import './App.css'
 
 const TRANSLATIONS = {
+	'en-US': {
+		languageTutorTitle: 'Language Tutor',
+		lessonMode: 'Lesson Mode',
+		chatMode: 'Chat Mode',
+		readyToPractice: 'Ready to practice',
+		startConversationHelp:
+			"Start a conversation and I'll help you learn with personalized feedback!",
+		englishTranslation: 'English translation',
+		tutorThinking: 'Tutor is thinking...',
+		typeMessagePlaceholder: 'Type your message in',
+		progressOverview: 'Progress Overview',
+		messages: 'Messages:',
+		vocabulary: 'Vocabulary:',
+		words: 'words',
+		accuracy: 'Accuracy:',
+		learningGoals: 'Learning Goals',
+		addGoal: '+ Add',
+		progress: 'Progress',
+		feedback: 'Feedback',
+		greatJob: 'Great job!',
+		smallCorrections: 'Small corrections:',
+		tryThis: 'Try this:',
+		learningStats: 'Learning Stats',
+		vocabularyGrowth: 'Vocabulary Growth',
+		grammarAccuracy: 'Grammar Accuracy',
+		enterLearningGoal: 'Enter your learning goal:',
+		sorryTroubleResponding:
+			"I'm sorry, I'm having trouble responding right now. Let's continue practicing!",
+		keepPracticing: "Let's keep practicing!",
+		languageMode: 'Language mode:',
+		onlyEnglish: 'English only',
+		onlySwedish: 'Swedish only',
+		onlyItalian: 'Italian only',
+		withTranslations: 'With translations',
+	},
 	'cs-CZ': {
 		languageTutorTitle: 'Jazykový Tutor',
 		lessonMode: 'Režim Lekce',
@@ -25,9 +56,9 @@ const TRANSLATIONS = {
 		readyToPractice: 'Připraven/a procvičovat',
 		startConversationHelp:
 			'Začněte konverzaci a já vám pomohu se učit s personalizovanou zpětnou vazbou!',
-		nativeTranslation: 'Český překlad',
+		englishTranslation: 'Český překlad',
 		tutorThinking: 'Tutor přemýšlí...',
-		typeMessagePlaceholder: 'Napište zprávu v jazyce, který se učíte',
+		typeMessagePlaceholder: 'Napište zprávu v',
 		progressOverview: 'Přehled Pokroku',
 		messages: 'Zprávy:',
 		vocabulary: 'Slovní zásoba:',
@@ -44,33 +75,40 @@ const TRANSLATIONS = {
 		vocabularyGrowth: 'Růst Slovní Zásoby',
 		grammarAccuracy: 'Gramatická Přesnost',
 		enterLearningGoal: 'Zadejte svůj výukový cíl:',
-		addGoalButton: 'Přidat cíl',
-		cancel: 'Zrušit',
+		sorryTroubleResponding:
+			'Omlouvám se, mám potíže s odpovědí. Pokračujme v procvičování!',
+		keepPracticing: 'Pokračujme v procvičování!',
+		languageMode: 'Režim jazyka:',
 		onlyEnglish: 'Pouze anglicky',
 		onlySwedish: 'Pouze švédsky',
 		onlyItalian: 'Pouze italsky',
 		withTranslations: 'S překlady',
-		languageMode: 'Režim jazyka:',
-		startListening: 'Klikněte pro mluvení',
-		stopListening: 'Klikněte pro zastavení',
-		speechEnabled: 'Zvuk zapnut',
-		speechDisabled: 'Zvuk vypnut',
-		sorryTroubleResponding:
-			'Omlouvám se, mám potíže s odpovědí. Pokračujme v procvičování!',
-		keepPracticing: 'Pokračujme v procvičování!',
-		liveMode: 'Live režim',
-		normalMode: 'Normální režim',
-		liveModeActive: '🔴 LIVE - Mluvte volně',
 	},
 }
 
-const t = (key) => TRANSLATIONS['cs-CZ'][key] || key
+const appLocale = 'cs-CZ' // Nastaveno na češtinu
+const browserLocale = navigator.languages?.[0] || navigator.language || 'en-US'
+const findMatchingLocale = (locale) => {
+	if (TRANSLATIONS[locale]) return locale
+	const lang = locale.split('-')[0]
+	const match = Object.keys(TRANSLATIONS).find((key) =>
+		key.startsWith(lang + '-')
+	)
+	return match || 'en-US'
+}
+const locale =
+	appLocale !== '{{APP_LOCALE}}'
+		? findMatchingLocale(appLocale)
+		: findMatchingLocale(browserLocale)
+const t = (key) =>
+	TRANSLATIONS[locale]?.[key] || TRANSLATIONS['en-US'][key] || key
 
 const LanguageTutor = () => {
 	const [selectedLanguage, setSelectedLanguage] = useState('english')
 	const [messages, setMessages] = useState([])
 	const [currentMessage, setCurrentMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
+	const [targetLanguageOnlyMode, setTargetLanguageOnlyMode] = useState(false)
 	const [userProfile, setUserProfile] = useState({
 		proficiencyLevel: 'Beginner',
 		totalMessages: 0,
@@ -81,71 +119,21 @@ const LanguageTutor = () => {
 	const [learningGoals, setLearningGoals] = useState([
 		{
 			id: 1,
-			text: 'Zvládnout základní anglické pozdravy',
+			text: 'Master basic greetings',
 			completed: false,
-			progress: 0,
-			type: 'greetings',
-			targetWords: [
-				'hello',
-				'hi',
-				'good morning',
-				'good afternoon',
-				'good evening',
-				'how are you',
-				'nice to meet you',
-				'goodbye',
-				'bye',
-				'see you',
-			],
-			usedWords: new Set(),
-			targetCount: 10,
+			progress: 20,
 		},
 		{
 			id: 2,
-			text: 'Naučit se přítomný čas (Present Simple)',
+			text: 'Learn present tense verbs',
 			completed: false,
-			progress: 0,
-			type: 'grammar',
-			targetPatterns: [
-				'am',
-				'is',
-				'are',
-				'do',
-				'does',
-				'have',
-				'has',
-				'work',
-				'works',
-				'live',
-				'lives',
-			],
-			usedPatterns: new Set(),
-			targetCount: 15,
+			progress: 10,
 		},
 		{
 			id: 3,
-			text: 'Rozšířit slovní zásobu o každodenní výrazy',
+			text: 'Expand food vocabulary',
 			completed: false,
 			progress: 0,
-			type: 'vocabulary',
-			targetWords: [
-				'family',
-				'house',
-				'food',
-				'work',
-				'school',
-				'friend',
-				'time',
-				'day',
-				'week',
-				'month',
-				'year',
-				'today',
-				'tomorrow',
-				'yesterday',
-			],
-			usedWords: new Set(),
-			targetCount: 20,
 		},
 	])
 	const [feedback, setFeedback] = useState(null)
@@ -156,22 +144,16 @@ const LanguageTutor = () => {
 		grammarAccuracy: [60, 65, 70, 75, 80],
 		conversationLength: [5, 8, 12, 15, 18],
 	})
-	const [showGoalModal, setShowGoalModal] = useState(false)
-	const [newGoalText, setNewGoalText] = useState('')
-	const [targetLanguageOnlyMode, setTargetLanguageOnlyMode] = useState(false)
-	const [isListening, setIsListening] = useState(false)
-	const [speechEnabled, setSpeechEnabled] = useState(true)
-	const [recognition, setRecognition] = useState(null)
-	const [liveMode, setLiveMode] = useState(false)
-	const [silenceTimeout, setSilenceTimeout] = useState(null)
 	const messagesEndRef = useRef(null)
 
+	// Pouze 3 jazyky
 	const languages = {
 		english: { name: 'English', flag: '🇺🇸' },
 		swedish: { name: 'Swedish (Svenska)', flag: '🇸🇪' },
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
 	}
 
+	// Funkce pro dynamický text tlačítka
 	const getTargetLanguageOnlyText = () => {
 		const languageTexts = {
 			english: t('onlyEnglish'),
@@ -185,223 +167,78 @@ const LanguageTutor = () => {
 		scrollToBottom()
 	}, [messages])
 
-	useEffect(() => {
-		initializeSpeechRecognition()
-	}, [selectedLanguage])
-
-	useEffect(() => {
-		if (liveMode && !isListening && recognition) {
-			startListening()
-		}
-	}, [liveMode])
-
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 	}
 
-	const getLanguageCode = (language) => {
-		const languageCodes = {
-			english: 'en-US',
-			swedish: 'sv-SE',
-			italian: 'it-IT',
+	const getProficiencyColor = (level) => {
+		const colors = {
+			Beginner: 'text-green-600 bg-green-100',
+			Intermediate: 'text-yellow-600 bg-yellow-100',
+			Advanced: 'text-red-600 bg-red-100',
+			Native: 'text-purple-600 bg-purple-100',
 		}
-		return languageCodes[language] || 'en-US'
+		return colors[level] || colors.Beginner
 	}
 
-	const initializeSpeechRecognition = () => {
-		if (
-			!('webkitSpeechRecognition' in window) &&
-			!('SpeechRecognition' in window)
-		) {
-			return
+	const generateLearningGoals = (level, language) => {
+		const goalsByLevel = {
+			Beginner: {
+				english: [
+					'Master basic greetings and introductions',
+					'Learn present tense regular verbs',
+					'Build everyday vocabulary',
+					'Practice numbers 1-100',
+					'Use basic question words (what, how, where)',
+				],
+				swedish: [
+					'Master basic greetings (hej, hå)',
+					'Learn present tense verbs',
+					'Build family and home vocabulary',
+					'Practice Swedish pronunciation',
+					'Use basic question words',
+				],
+				italian: [
+					'Master basic greetings (ciao, buongiorno)',
+					'Learn present tense essere and avere',
+					'Build food and family vocabulary',
+					'Practice Italian pronunciation',
+					'Learn basic sentence structure',
+				],
+			},
+			Intermediate: {
+				english: [
+					'Master past tenses',
+					'Learn conditional mood',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand cultural expressions',
+				],
+				swedish: [
+					'Master past tenses (preteritum and perfekt)',
+					'Learn Swedish word order',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand Swedish culture',
+				],
+				italian: [
+					'Master past tenses (passato prossimo and imperfetto)',
+					'Learn subjunctive mood basics',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand Italian culture',
+				],
+			},
 		}
 
-		const SpeechRecognition =
-			window.webkitSpeechRecognition || window.SpeechRecognition
-		const recognitionInstance = new SpeechRecognition()
-
-		recognitionInstance.continuous = liveMode
-		recognitionInstance.interimResults = true
-		recognitionInstance.lang = getLanguageCode(selectedLanguage)
-
-		recognitionInstance.onstart = () => {
-			setIsListening(true)
-		}
-
-		recognitionInstance.onend = () => {
-			setIsListening(false)
-			if (liveMode && !isListening) {
-				// Restart listening in live mode
-				setTimeout(() => {
-					if (liveMode) startListening()
-				}, 100)
-			}
-		}
-
-		recognitionInstance.onresult = (event) => {
-			let finalTranscript = ''
-			let interimTranscript = ''
-
-			for (let i = event.resultIndex; i < event.results.length; i++) {
-				const transcript = event.results[i][0].transcript
-				if (event.results[i].isFinal) {
-					finalTranscript += transcript
-				} else {
-					interimTranscript += transcript
-				}
-			}
-
-			if (finalTranscript) {
-				setCurrentMessage(finalTranscript)
-
-				if (liveMode) {
-					// Clear existing silence timeout
-					if (silenceTimeout) {
-						clearTimeout(silenceTimeout)
-					}
-
-					// Set new silence timeout
-					const timeout = setTimeout(() => {
-						if (finalTranscript.trim()) {
-							sendMessage(finalTranscript)
-						}
-					}, 3000) // 3 seconds of silence
-
-					setSilenceTimeout(timeout)
-				}
-			} else if (interimTranscript && !liveMode) {
-				setCurrentMessage(interimTranscript)
-			}
-		}
-
-		recognitionInstance.onerror = (event) => {
-			console.error('Speech recognition error:', event.error)
-			setIsListening(false)
-		}
-
-		setRecognition(recognitionInstance)
-	}
-
-	const startListening = () => {
-		if (!recognition || isListening) return
-
-		try {
-			recognition.continuous = liveMode
-			recognition.lang = getLanguageCode(selectedLanguage)
-			recognition.start()
-		} catch (error) {
-			console.error('Error starting speech recognition:', error)
-		}
-	}
-
-	const stopListening = () => {
-		if (recognition && isListening) {
-			recognition.stop()
-		}
-		if (silenceTimeout) {
-			clearTimeout(silenceTimeout)
-			setSilenceTimeout(null)
-		}
-	}
-
-	const speakText = (text, language = selectedLanguage) => {
-		if (!speechEnabled || !text) return
-
-		window.speechSynthesis.cancel()
-
-		const utterance = new SpeechSynthesisUtterance(text)
-		utterance.lang = getLanguageCode(language)
-		utterance.rate = 0.9
-		utterance.pitch = 1
-
-		const voices = window.speechSynthesis.getVoices()
-		const targetVoice = voices.find((voice) =>
-			voice.lang.startsWith(getLanguageCode(language).split('-')[0])
-		)
-
-		if (targetVoice) {
-			utterance.voice = targetVoice
-		}
-
-		window.speechSynthesis.speak(utterance)
-	}
-
-	const updateGoalProgress = (userMessage) => {
-		setLearningGoals((prevGoals) =>
-			prevGoals.map((goal) => {
-				if (goal.completed) return goal
-
-				const messageWords = userMessage.toLowerCase().split(/\s+/)
-				let newUsedWords = new Set(goal.usedWords || [])
-				let newUsedPatterns = new Set(goal.usedPatterns || [])
-				let progressIncrease = 0
-
-				if (goal.type === 'greetings' && goal.targetWords) {
-					goal.targetWords.forEach((word) => {
-						if (
-							userMessage
-								.toLowerCase()
-								.includes(word.toLowerCase()) &&
-							!newUsedWords.has(word)
-						) {
-							newUsedWords.add(word)
-							progressIncrease += 100 / goal.targetCount
-						}
-					})
-				}
-
-				if (goal.type === 'grammar' && goal.targetPatterns) {
-					goal.targetPatterns.forEach((pattern) => {
-						if (
-							messageWords.includes(pattern.toLowerCase()) &&
-							!newUsedPatterns.has(pattern)
-						) {
-							newUsedPatterns.add(pattern)
-							progressIncrease += 100 / goal.targetCount
-						}
-					})
-				}
-
-				if (goal.type === 'vocabulary' && goal.targetWords) {
-					goal.targetWords.forEach((word) => {
-						if (
-							messageWords.includes(word.toLowerCase()) &&
-							!newUsedWords.has(word)
-						) {
-							newUsedWords.add(word)
-							progressIncrease += 100 / goal.targetCount
-						}
-					})
-				}
-
-				if (goal.type === 'custom') {
-					messageWords.forEach((word) => {
-						if (
-							word.length > 2 &&
-							!newUsedWords.has(word) &&
-							/^[a-zA-Z]+$/.test(word)
-						) {
-							newUsedWords.add(word)
-							progressIncrease += 100 / goal.targetCount
-						}
-					})
-				}
-
-				const newProgress = Math.min(
-					100,
-					(goal.progress || 0) + progressIncrease
-				)
-				const isCompleted = newProgress >= 100
-
-				return {
-					...goal,
-					usedWords: newUsedWords,
-					usedPatterns: newUsedPatterns,
-					progress: Math.round(newProgress),
-					completed: isCompleted,
-				}
-			})
-		)
+		const goals =
+			goalsByLevel[level]?.[language] || goalsByLevel.Beginner.english
+		return goals.slice(0, 3).map((text, index) => ({
+			id: Date.now() + index,
+			text,
+			completed: false,
+			progress: Math.floor(Math.random() * 30),
+		}))
 	}
 
 	const analyzeProficiencyLevel = (messageHistory) => {
@@ -411,39 +248,37 @@ const LanguageTutor = () => {
 		return 'Advanced'
 	}
 
-	const sendMessage = async (messageText = currentMessage) => {
-		if (!messageText.trim() || isLoading) return
+	const sendMessage = async () => {
+		if (!currentMessage.trim() || isLoading) return
 
 		const userMessage = {
 			id: Date.now(),
-			text: messageText,
+			text: currentMessage,
 			sender: 'user',
 			timestamp: new Date(),
 		}
 
 		setMessages((prev) => [...prev, userMessage])
-		if (!liveMode) setCurrentMessage('')
+		setCurrentMessage('')
 		setIsLoading(true)
-
-		updateGoalProgress(messageText)
 
 		try {
 			const conversationHistory = [...messages, userMessage]
 			const detectedLevel = analyzeProficiencyLevel(conversationHistory)
 
 			const requestData = {
-				message: messageText,
+				message: currentMessage,
 				conversationHistory: conversationHistory.slice(-5),
 				userProfile: {
 					proficiencyLevel: detectedLevel,
 					learningGoals: learningGoals.map((g) => g.text),
-					targetLanguageOnlyMode, // změněno z englishOnlyMode
+					targetLanguageOnlyMode,
 					showLessonMode,
 					selectedLanguage: languages[selectedLanguage].name,
 				},
 			}
 
-			// Call our API endpoint instead of Claude directly
+			// Call our API endpoint
 			const response = await fetch('/api/chat', {
 				method: 'POST',
 				headers: {
@@ -469,10 +304,7 @@ const LanguageTutor = () => {
 			setMessages((prev) => [...prev, tutorMessage])
 			setFeedback(parsedResponse.feedback)
 
-			if (speechEnabled) {
-				speakText(parsedResponse.tutorResponse, selectedLanguage)
-			}
-
+			// Update user profile
 			setUserProfile((prev) => ({
 				...prev,
 				totalMessages: prev.totalMessages + 1,
@@ -484,8 +316,22 @@ const LanguageTutor = () => {
 				]),
 			}))
 
-			if (liveMode) {
-				setCurrentMessage('') // Clear message in live mode after sending
+			// Update progress stats
+			if (userProfile.totalMessages % 5 === 0) {
+				setProgressStats((prev) => ({
+					vocabularyGrowth: [
+						...prev.vocabularyGrowth,
+						userProfile.vocabularyCount.size,
+					],
+					grammarAccuracy: [
+						...prev.grammarAccuracy,
+						parsedResponse.grammarAnalysis.accuracy,
+					],
+					conversationLength: [
+						...prev.conversationLength,
+						conversationHistory.length,
+					],
+				}))
 			}
 		} catch (error) {
 			console.error('Error getting tutor response:', error)
@@ -501,37 +347,56 @@ const LanguageTutor = () => {
 		}
 	}
 
-	const toggleLiveMode = () => {
-		const newLiveMode = !liveMode
-		setLiveMode(newLiveMode)
-
-		if (newLiveMode) {
-			// Start live mode
-			if (!isListening) {
-				startListening()
-			}
-		} else {
-			// Stop live mode
-			stopListening()
-			if (silenceTimeout) {
-				clearTimeout(silenceTimeout)
-				setSilenceTimeout(null)
-			}
-		}
+	const handleLanguageChange = (newLang) => {
+		setSelectedLanguage(newLang)
+		setMessages([])
+		setFeedback(null)
+		setTranslatedMessages(new Set())
+		const newGoals = generateLearningGoals(
+			userProfile.proficiencyLevel,
+			newLang
+		)
+		setLearningGoals(newGoals)
 	}
 
-	const getProficiencyColor = (level) => {
-		const colors = {
-			Beginner: 'text-green-600 bg-green-100',
-			Intermediate: 'text-yellow-600 bg-yellow-100',
-			Advanced: 'text-red-600 bg-red-100',
-			Native: 'text-purple-600 bg-purple-100',
-		}
-		return colors[level] || colors.Beginner
+	const toggleGoalCompletion = (goalId) => {
+		setLearningGoals((prev) =>
+			prev.map((goal) =>
+				goal.id === goalId
+					? {
+							...goal,
+							completed: !goal.completed,
+							progress: goal.completed ? goal.progress : 100,
+					  }
+					: goal
+			)
+		)
 	}
 
-	const speechSupported =
-		'webkitSpeechRecognition' in window || 'SpeechRecognition' in window
+	const toggleMessageTranslation = (messageId) => {
+		setTranslatedMessages((prev) => {
+			const newSet = new Set(prev)
+			if (newSet.has(messageId)) {
+				newSet.delete(messageId)
+			} else {
+				newSet.add(messageId)
+			}
+			return newSet
+		})
+	}
+
+	const addCustomGoal = () => {
+		const goalText = prompt(t('enterLearningGoal'))
+		if (goalText?.trim()) {
+			const newGoal = {
+				id: Date.now(),
+				text: goalText.trim(),
+				completed: false,
+				progress: 0,
+			}
+			setLearningGoals((prev) => [...prev, newGoal])
+		}
+	}
 
 	return (
 		<div className="flex h-screen bg-gray-50">
@@ -551,7 +416,7 @@ const LanguageTutor = () => {
 							<select
 								value={selectedLanguage}
 								onChange={(e) =>
-									setSelectedLanguage(e.target.value)
+									handleLanguageChange(e.target.value)
 								}
 								className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 							>
@@ -574,6 +439,7 @@ const LanguageTutor = () => {
 						</div>
 
 						<div className="flex items-center space-x-2">
+							{/* Dynamické tlačítko pro jazyk */}
 							<div className="flex items-center space-x-2">
 								<span className="text-sm text-gray-600">
 									{t('languageMode')}
@@ -595,21 +461,6 @@ const LanguageTutor = () => {
 										: t('withTranslations')}
 								</button>
 							</div>
-
-							{speechSupported && (
-								<button
-									onClick={toggleLiveMode}
-									className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-										liveMode
-											? 'bg-red-500 text-white animate-pulse'
-											: 'bg-purple-200 text-purple-700 hover:bg-purple-300'
-									}`}
-								>
-									{liveMode
-										? t('liveModeActive')
-										: t('liveMode')}
-								</button>
-							)}
 
 							<button
 								onClick={() =>
@@ -640,15 +491,9 @@ const LanguageTutor = () => {
 								{t('readyToPractice')}{' '}
 								{languages[selectedLanguage].name}?
 							</h2>
-							<p className="text-gray-500 mb-4">
+							<p className="text-gray-500">
 								{t('startConversationHelp')}
 							</p>
-							{liveMode && (
-								<div className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm animate-pulse">
-									<Star className="h-4 w-4 mr-2" />
-									{t('liveModeActive')}
-								</div>
-							)}
 						</div>
 					)}
 
@@ -665,10 +510,41 @@ const LanguageTutor = () => {
 								className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative group ${
 									message.sender === 'user'
 										? 'bg-blue-600 text-white'
-										: 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors cursor-pointer'
+										: 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors'
+								} ${
+									message.sender === 'tutor'
+										? 'cursor-pointer'
+										: ''
 								}`}
+								onClick={
+									message.sender === 'tutor'
+										? () =>
+												toggleMessageTranslation(
+													message.id
+												)
+										: undefined
+								}
 							>
-								<p className="pr-4">{message.text}</p>
+								{message.sender === 'tutor' &&
+									!targetLanguageOnlyMode && (
+										<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+											<Languages className="h-3 w-3 text-gray-400" />
+										</div>
+									)}
+								<p className="pr-4">
+									{message.sender === 'tutor' &&
+									translatedMessages.has(message.id)
+										? message.englishTranslation ||
+										  message.text
+										: message.text}
+								</p>
+								{message.sender === 'tutor' &&
+									translatedMessages.has(message.id) &&
+									!targetLanguageOnlyMode && (
+										<p className="text-xs mt-1 text-gray-500 italic">
+											{t('englishTranslation')}
+										</p>
+									)}
 								<p
 									className={`text-xs mt-1 ${
 										message.sender === 'user'
@@ -712,92 +588,32 @@ const LanguageTutor = () => {
 
 				{/* Input Area */}
 				<div className="bg-white border-t border-gray-200 p-4">
-					{!liveMode && (
-						<div className="flex space-x-2">
-							<button
-								onClick={
-									isListening ? stopListening : startListening
-								}
-								disabled={!speechSupported}
-								className={`px-3 py-2 rounded-md transition-colors ${
-									isListening
-										? 'bg-red-500 text-white animate-pulse'
-										: speechSupported
-										? 'bg-blue-200 text-blue-700 hover:bg-blue-300'
-										: 'bg-gray-100 text-gray-400 cursor-not-allowed'
-								}`}
-							>
-								{isListening ? (
-									<MicOff className="h-5 w-5" />
-								) : (
-									<Mic className="h-5 w-5" />
-								)}
-							</button>
-
-							<input
-								type="text"
-								value={currentMessage}
-								onChange={(e) =>
-									setCurrentMessage(e.target.value)
-								}
-								onKeyPress={(e) =>
-									e.key === 'Enter' && sendMessage()
-								}
-								placeholder={`${t(
-									'typeMessagePlaceholder'
-								)}...`}
-								className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-								disabled={isLoading}
-							/>
-
-							<button
-								onClick={() => setSpeechEnabled(!speechEnabled)}
-								className={`px-3 py-2 rounded-md transition-colors ${
-									speechEnabled
-										? 'bg-green-200 text-green-700 hover:bg-green-300'
-										: 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-								}`}
-							>
-								{speechEnabled ? (
-									<Volume2 className="h-5 w-5" />
-								) : (
-									<VolumeX className="h-5 w-5" />
-								)}
-							</button>
-
-							<button
-								onClick={() => sendMessage()}
-								disabled={isLoading || !currentMessage.trim()}
-								className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-							>
-								<Send className="h-5 w-5" />
-							</button>
-						</div>
-					)}
-
-					{liveMode && (
-						<div className="text-center py-4">
-							<div className="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-lg">
-								<div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
-								<span className="font-medium">
-									{t('liveModeActive')}
-								</span>
-							</div>
-							<p className="text-sm text-gray-500 mt-2">
-								Mluvte volně - automaticky odpovím po 3
-								vteřinách ticha
-							</p>
-							{currentMessage && (
-								<div className="mt-2 p-2 bg-gray-100 rounded text-sm">
-									Zachycuji: "{currentMessage}"
-								</div>
-							)}
-						</div>
-					)}
+					<div className="flex space-x-2">
+						<input
+							type="text"
+							value={currentMessage}
+							onChange={(e) => setCurrentMessage(e.target.value)}
+							onKeyPress={(e) =>
+								e.key === 'Enter' && sendMessage()
+							}
+							placeholder={`${t('typeMessagePlaceholder')} ${
+								languages[selectedLanguage].name
+							}...`}
+							className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							disabled={isLoading}
+						/>
+						<button
+							onClick={sendMessage}
+							disabled={isLoading || !currentMessage.trim()}
+							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+						>
+							<Send className="h-5 w-5" />
+						</button>
+					</div>
 				</div>
 			</div>
 
-			{/* Sidebar - Goals, Progress, etc. */}
+			{/* Sidebar */}
 			<div className="w-80 bg-white border-l border-gray-200 flex flex-col">
 				{/* Progress Overview */}
 				<div className="p-4 border-b border-gray-200">
@@ -835,7 +651,7 @@ const LanguageTutor = () => {
 							{t('learningGoals')}
 						</h3>
 						<button
-							onClick={() => setShowGoalModal(true)}
+							onClick={addCustomGoal}
 							className="text-blue-600 hover:text-blue-700 text-sm font-medium"
 						>
 							{t('addGoal')}
@@ -865,11 +681,7 @@ const LanguageTutor = () => {
 											</div>
 											<div className="w-full bg-gray-200 rounded-full h-2">
 												<div
-													className={`h-2 rounded-full transition-all duration-500 ${
-														goal.progress > 0
-															? 'bg-blue-600'
-															: 'bg-gray-300'
-													}`}
+													className="bg-blue-600 h-2 rounded-full transition-all duration-300"
 													style={{
 														width: `${goal.progress}%`,
 													}}
@@ -878,23 +690,9 @@ const LanguageTutor = () => {
 										</div>
 									</div>
 									<button
-										onClick={() => {
-											setLearningGoals((prev) =>
-												prev.map((g) =>
-													g.id === goal.id
-														? {
-																...g,
-																completed:
-																	!g.completed,
-																progress:
-																	g.completed
-																		? g.progress
-																		: 100,
-														  }
-														: g
-												)
-											)
-										}}
+										onClick={() =>
+											toggleGoalCompletion(goal.id)
+										}
 										className="ml-2 mt-1"
 									>
 										{goal.completed ? (
@@ -909,14 +707,14 @@ const LanguageTutor = () => {
 					</div>
 				</div>
 
-				{/* Feedback */}
+				{/* Real-time Feedback */}
 				{feedback && (
 					<div className="p-4 border-b border-gray-200">
 						<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
 							<MessageSquare className="h-5 w-5 mr-2" />
 							{t('feedback')}
 						</h3>
-						{feedback.positive?.length > 0 && (
+						{feedback.positive.length > 0 && (
 							<div className="mb-2">
 								<p className="text-xs font-medium text-green-600 mb-1">
 									{t('greatJob')}
@@ -924,14 +722,14 @@ const LanguageTutor = () => {
 								{feedback.positive.map((item, idx) => (
 									<p
 										key={idx}
-										className="text-sm text-green-700 bg-green-50 p-2 rounded mb-1"
+										className="text-sm text-green-700 bg-green-50 p-2 rounded"
 									>
 										{item}
 									</p>
 								))}
 							</div>
 						)}
-						{feedback.corrections?.length > 0 && (
+						{feedback.corrections.length > 0 && (
 							<div className="mb-2">
 								<p className="text-xs font-medium text-orange-600 mb-1">
 									{t('smallCorrections')}
@@ -939,14 +737,14 @@ const LanguageTutor = () => {
 								{feedback.corrections.map((item, idx) => (
 									<p
 										key={idx}
-										className="text-sm text-orange-700 bg-orange-50 p-2 rounded mb-1"
+										className="text-sm text-orange-700 bg-orange-50 p-2 rounded"
 									>
 										{item}
 									</p>
 								))}
 							</div>
 						)}
-						{feedback.suggestions?.length > 0 && (
+						{feedback.suggestions.length > 0 && (
 							<div>
 								<p className="text-xs font-medium text-blue-600 mb-1">
 									{t('tryThis')}
@@ -954,7 +752,7 @@ const LanguageTutor = () => {
 								{feedback.suggestions.map((item, idx) => (
 									<p
 										key={idx}
-										className="text-sm text-blue-700 bg-blue-50 p-2 rounded mb-1"
+										className="text-sm text-blue-700 bg-blue-50 p-2 rounded"
 									>
 										{item}
 									</p>
@@ -964,7 +762,7 @@ const LanguageTutor = () => {
 					</div>
 				)}
 
-				{/* Stats */}
+				{/* Quick Stats */}
 				<div className="flex-1 p-4">
 					<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
 						<BarChart3 className="h-5 w-5 mr-2" />
@@ -992,83 +790,28 @@ const LanguageTutor = () => {
 									))}
 							</div>
 						</div>
-					</div>
-				</div>
-			</div>
-
-			{/* Goal Modal */}
-			{showGoalModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
-						<h3 className="text-lg font-semibold text-gray-800 mb-4">
-							{t('enterLearningGoal')}
-						</h3>
-						<input
-							type="text"
-							value={newGoalText}
-							onChange={(e) => setNewGoalText(e.target.value)}
-							onKeyPress={(e) => {
-								if (e.key === 'Enter' && newGoalText.trim()) {
-									const newGoal = {
-										id: Date.now(),
-										text: newGoalText.trim(),
-										completed: false,
-										progress: 0,
-										type: 'custom',
-										usedWords: new Set(),
-										targetCount: 50,
-									}
-									setLearningGoals((prev) => [
-										...prev,
-										newGoal,
-									])
-									setNewGoalText('')
-									setShowGoalModal(false)
-								}
-							}}
-							placeholder="Např.: Naučit se budoucí čas"
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
-							autoFocus
-						/>
-						<div className="flex space-x-3">
-							<button
-								onClick={() => {
-									if (newGoalText.trim()) {
-										const newGoal = {
-											id: Date.now(),
-											text: newGoalText.trim(),
-											completed: false,
-											progress: 0,
-											type: 'custom',
-											usedWords: new Set(),
-											targetCount: 50,
-										}
-										setLearningGoals((prev) => [
-											...prev,
-											newGoal,
-										])
-										setNewGoalText('')
-										setShowGoalModal(false)
-									}
-								}}
-								disabled={!newGoalText.trim()}
-								className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-							>
-								{t('addGoalButton')}
-							</button>
-							<button
-								onClick={() => {
-									setNewGoalText('')
-									setShowGoalModal(false)
-								}}
-								className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-							>
-								{t('cancel')}
-							</button>
+						<div>
+							<p className="text-sm text-gray-600 mb-1">
+								{t('grammarAccuracy')}
+							</p>
+							<div className="flex items-end space-x-1 h-8">
+								{progressStats.grammarAccuracy
+									.slice(-5)
+									.map((value, idx) => (
+										<div
+											key={idx}
+											className="bg-green-600 rounded-t"
+											style={{
+												height: `${value}%`,
+												width: '20%',
+											}}
+										></div>
+									))}
+							</div>
 						</div>
 					</div>
 				</div>
-			)}
+			</div>
 		</div>
 	)
 }
