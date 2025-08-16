@@ -86,7 +86,7 @@ const TRANSLATIONS = {
 	},
 }
 
-const appLocale = 'cs-CZ' // Nastaveno na češtinu
+const appLocale = 'cs-CZ'
 const browserLocale = navigator.languages?.[0] || navigator.language || 'en-US'
 const findMatchingLocale = (locale) => {
 	if (TRANSLATIONS[locale]) return locale
@@ -266,37 +266,71 @@ const LanguageTutor = () => {
 			const conversationHistory = [...messages, userMessage]
 			const detectedLevel = analyzeProficiencyLevel(conversationHistory)
 
-			const requestData = {
-				message: currentMessage,
-				conversationHistory: conversationHistory.slice(-5),
-				userProfile: {
-					proficiencyLevel: detectedLevel,
-					learningGoals: learningGoals.map((g) => g.text),
-					targetLanguageOnlyMode,
-					showLessonMode,
-					selectedLanguage: languages[selectedLanguage].name,
-				},
+			const prompt = `
+You are a friendly, encouraging language tutor helping someone learn ${
+				languages[selectedLanguage].name
+			}. The user interface is in Czech, but you should respond in the target language they're learning.
+
+Conversation history: ${JSON.stringify(
+				conversationHistory
+					.slice(-5)
+					.map((m) => ({ sender: m.sender, text: m.text }))
+			)}
+
+Current user message: "${currentMessage}"
+User's proficiency level: ${detectedLevel}
+Learning goals: ${learningGoals.map((g) => g.text).join(', ')}
+Lesson mode: ${showLessonMode}
+Target language only mode: ${targetLanguageOnlyMode}
+
+Important instructions:
+- Respond ONLY in ${
+				languages[selectedLanguage].name
+			} (the language they're learning)
+- Be encouraging and supportive
+- ${
+				showLessonMode
+					? 'Focus on teaching specific grammar or vocabulary since lesson mode is ON.'
+					: 'Keep the conversation natural and flowing since chat mode is ON.'
 			}
+- Ask engaging questions to continue the conversation
+- Provide gentle corrections when needed
 
-			// Call our API endpoint
-			const response = await fetch('/api/chat', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(requestData),
-			})
+Respond with a JSON object in this exact format:
+{
+  "tutorResponse": "Your encouraging response in ${
+		languages[selectedLanguage].name
+  }. ${
+				showLessonMode
+					? 'Focus on teaching specific grammar or vocabulary.'
+					: 'Keep the conversation natural and flowing.'
+			}",
+  "englishTranslation": "The exact same response translated to Czech for the user interface",
+  "feedback": {
+    "positive": ["Positive aspects of their language use"],
+    "corrections": ["Gentle corrections if needed"],
+    "suggestions": ["Helpful suggestions for improvement"]
+  },
+  "grammarAnalysis": {
+    "accuracy": 85,
+    "detectedLevel": "${detectedLevel}",
+    "strengths": ["Areas they did well"],
+    "improvements": ["Areas to work on"]
+  },
+  "vocabularyUsed": ["words", "they", "used"],
+  "progressNotes": "Brief encouraging note about their progress"
+}
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
+Your entire response MUST be valid JSON only. DO NOT include any text outside the JSON structure.
+`
 
-			const parsedResponse = await response.json()
+			const response = await window.claude.complete(prompt)
+			const parsedResponse = JSON.parse(response)
 
 			const tutorMessage = {
 				id: Date.now() + 1,
 				text: parsedResponse.tutorResponse,
-				englishTranslation: parsedResponse.czechTranslation,
+				englishTranslation: parsedResponse.englishTranslation,
 				sender: 'tutor',
 				timestamp: new Date(),
 			}
@@ -512,12 +546,14 @@ const LanguageTutor = () => {
 										? 'bg-blue-600 text-white'
 										: 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors'
 								} ${
-									message.sender === 'tutor'
+									message.sender === 'tutor' &&
+									!targetLanguageOnlyMode
 										? 'cursor-pointer'
 										: ''
 								}`}
 								onClick={
-									message.sender === 'tutor'
+									message.sender === 'tutor' &&
+									!targetLanguageOnlyMode
 										? () =>
 												toggleMessageTranslation(
 													message.id
@@ -533,7 +569,8 @@ const LanguageTutor = () => {
 									)}
 								<p className="pr-4">
 									{message.sender === 'tutor' &&
-									translatedMessages.has(message.id)
+									translatedMessages.has(message.id) &&
+									!targetLanguageOnlyMode
 										? message.englishTranslation ||
 										  message.text
 										: message.text}
