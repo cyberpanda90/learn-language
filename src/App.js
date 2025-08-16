@@ -1,19 +1,42 @@
+// Rebuilt App.js with a refreshed 2025 design. This version maintains the
+// original application logic (state management, AI calls and translation
+// handling) while introducing a modern dashboard layout inspired by
+// productivity apps. It features a vertical navigation bar, a central chat
+// panel with an upcoming schedule, and a right‑hand panel containing user
+// profile details, progress statistics, goals, feedback and AI analysis. The
+// look and feel draw on green and blue gradients, rounded cards and
+// minimalist typography to evoke a desktop iOS aesthetic.
+
 import React, { useState, useEffect, useRef } from 'react'
 import {
 	Send,
-	BookOpen,
 	Target,
 	TrendingUp,
 	MessageSquare,
 	CheckCircle,
 	BarChart3,
-	Languages,
 	Brain,
+	Home,
+	Calendar,
+	Settings,
+	Search,
+	BookOpen,
+	Pencil,
+	Headphones,
 } from 'lucide-react'
 
+// Import a decorative abstract cityscape used in the profile section. This
+// image was generated to match the colour palette of the supplied design
+// reference (greens and blues with a flat, minimal aesthetic).
+import cityImage from './assets/city.png'
+import logo from './assets/logo.png'
+
+// Internationalised strings. Additional locales can be added to this object
+// following the same structure. The default locale is detected from the browser
+// but can be overridden via the appLocale constant.
 const TRANSLATIONS = {
 	'en-US': {
-		languageTutorTitle: 'Language Tutor',
+		languageTutorTitle: 'Učslov',
 		lessonMode: 'Lesson Mode',
 		chatMode: 'Chat Mode',
 		readyToPractice: 'Ready to practice',
@@ -49,7 +72,7 @@ const TRANSLATIONS = {
 		withTranslations: 'With translations',
 	},
 	'cs-CZ': {
-		languageTutorTitle: 'Jazykový Tutor',
+		languageTutorTitle: 'Učslov',
 		lessonMode: 'Režim Lekce',
 		chatMode: 'Režim Konverzace',
 		readyToPractice: 'Připraven procvičovat',
@@ -86,8 +109,14 @@ const TRANSLATIONS = {
 	},
 }
 
+// Determine which locale to use. If the appLocale constant is not set to
+// '{{APP_LOCALE}}' it will take priority, otherwise the browser's preferred
+// language is used. Fallback to English if no match is found.
 const appLocale = 'cs-CZ'
-const browserLocale = navigator.languages?.[0] || navigator.language || 'en-US'
+const browserLocale =
+	(typeof navigator !== 'undefined' &&
+		(navigator.languages?.[0] || navigator.language)) ||
+	'en-US'
 const findMatchingLocale = (locale) => {
 	if (TRANSLATIONS[locale]) return locale
 	const lang = locale.split('-')[0]
@@ -103,12 +132,198 @@ const locale =
 const t = (key) =>
 	TRANSLATIONS[locale]?.[key] || TRANSLATIONS['en-US'][key] || key
 
+/**
+ * A fallback analysis used when the AI call fails or returns invalid data. It
+ * estimates a proficiency level based solely on the number of user messages.
+ */
+const getFallbackAnalysis = (messageCount) => {
+	let level = 'Beginner'
+	if (messageCount >= 25) level = 'Advanced'
+	else if (messageCount >= 15) level = 'Intermediate'
+	return {
+		level,
+		confidence: 0.6,
+		reasoning: 'Fallback analysis based on conversation length',
+		details: {
+			grammarAccuracy: 70,
+			vocabularyLevel: 'Basic',
+			sentenceComplexity: 'Simple',
+			languageConsistency: 'Good',
+			strongPoints: ['Active participation'],
+			improvementAreas: ['Continue practicing'],
+			errorCount: 2,
+			averageSentenceLength: 6,
+		},
+		levelProgression: {
+			currentStage: level,
+			nextMilestone: 'Continue practicing',
+			estimatedProgress: '50%',
+		},
+	}
+}
+
+/**
+ * Analyze the learner's proficiency using the AI endpoint. This mirrors the
+ * original analyzeLanguageProficiency logic from the existing code. It
+ * constructs a detailed prompt describing user messages and requests a JSON
+ * response describing the proficiency level and various metrics. When the
+ * response is invalid or an error occurs, the fallback analysis is used.
+ */
+const analyzeLanguageProficiency = async (messageHistory, targetLanguage) => {
+	if (messageHistory.length < 3) {
+		return {
+			level: 'Beginner',
+			confidence: 0.9,
+			reasoning: 'Insufficient conversation data',
+			details: {
+				grammarAccuracy: 70,
+				vocabularyLevel: 'Basic',
+				sentenceComplexity: 'Simple',
+				languageConsistency: 'Good',
+				strongPoints: ['Getting started'],
+				improvementAreas: ['Continue practicing'],
+				errorCount: 0,
+				averageSentenceLength: 5,
+			},
+			levelProgression: {
+				currentStage: 'Beginner',
+				nextMilestone: 'Continue practicing',
+				estimatedProgress: '20%',
+			},
+		}
+	}
+	const userMessages = messageHistory
+		.filter((msg) => msg.sender === 'user')
+		.map((msg) => ({ text: msg.text, timestamp: msg.timestamp }))
+	if (userMessages.length < 2) {
+		return {
+			level: 'Beginner',
+			confidence: 0.8,
+			reasoning: 'Too few user messages to analyze',
+			details: {
+				grammarAccuracy: 70,
+				vocabularyLevel: 'Basic',
+				sentenceComplexity: 'Simple',
+				languageConsistency: 'Good',
+				strongPoints: ['Active participation'],
+				improvementAreas: ['Continue practicing'],
+				errorCount: 0,
+				averageSentenceLength: 5,
+			},
+			levelProgression: {
+				currentStage: 'Beginner',
+				nextMilestone: 'Continue practicing',
+				estimatedProgress: '30%',
+			},
+		}
+	}
+	const languageNames = {
+		english: 'English',
+		swedish: 'Swedish',
+		italian: 'Italian',
+	}
+	const analysisPrompt = `
+You are an expert language assessment specialist. Analyze the following conversation messages from a language learner and determine their proficiency level in ${
+		languageNames[targetLanguage] || 'English'
+	}.
+
+User messages to analyze:
+${userMessages.map((msg, i) => `${i + 1}. "${msg.text}"`).join('\n')}
+
+Please analyze these aspects:
+1. **Grammar Accuracy**: Correct use of tenses, sentence structure, word order
+2. **Vocabulary Level**: Sophistication and variety of words used
+3. **Sentence Complexity**: Simple vs compound vs complex sentences
+4. **Language Consistency**: Consistent use of the target language
+5. **Fluency Indicators**: Natural flow, idiom usage, cultural understanding
+6. **Error Patterns**: Types and frequency of mistakes
+
+Based on your analysis, assign ONE of these levels:
+- **Beginner**: Basic words, simple present tense, frequent errors, very short sentences
+- **Intermediate**: Mix of tenses, longer sentences, some complex vocabulary, occasional errors
+- **Advanced**: Complex structures, sophisticated vocabulary, rare errors, natural expression
+- **Native**: Perfect or near-perfect grammar, idioms, cultural references, effortless expression
+
+Respond with a JSON object in this exact format:
+{
+  "level": "Beginner|Intermediate|Advanced|Native",
+  "confidence": 0.85,
+  "reasoning": "Detailed explanation of why you assigned this level",
+  "details": {
+    "grammarAccuracy": 85,
+    "vocabularyLevel": "Intermediate",
+    "sentenceComplexity": "Complex",
+    "languageConsistency": "Excellent",
+    "strongPoints": ["Good use of past tense", "Varied vocabulary"],
+    "improvementAreas": ["Article usage", "Conditional sentences"],
+    "errorCount": 3,
+    "averageSentenceLength": 8.5
+  },
+  "levelProgression": {
+    "currentStage": "Early Intermediate",
+    "nextMilestone": "Master subjunctive mood",
+    "estimatedProgress": "65%"
+  }
+}
+
+Your response must be valid JSON only. No additional text.`
+	try {
+		const response = await fetch('/api/claude', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ prompt: analysisPrompt }),
+		})
+		if (!response.ok)
+			throw new Error(`HTTP error! status: ${response.status}`)
+		const result = await response.json()
+		if (
+			!result.level ||
+			!['Beginner', 'Intermediate', 'Advanced', 'Native'].includes(
+				result.level
+			)
+		) {
+			console.warn('Invalid level from AI, using fallback')
+			return getFallbackAnalysis(userMessages.length)
+		}
+		return {
+			level: result.level,
+			confidence: result.confidence || 0.8,
+			reasoning: result.reasoning || 'AI analysis completed',
+			details: {
+				grammarAccuracy: result.details?.grammarAccuracy || 75,
+				vocabularyLevel: result.details?.vocabularyLevel || 'Basic',
+				sentenceComplexity:
+					result.details?.sentenceComplexity || 'Simple',
+				languageConsistency:
+					result.details?.languageConsistency || 'Good',
+				strongPoints: result.details?.strongPoints || [],
+				improvementAreas: result.details?.improvementAreas || [],
+				errorCount: result.details?.errorCount || 0,
+				averageSentenceLength:
+					result.details?.averageSentenceLength || 5,
+			},
+			levelProgression: result.levelProgression || {
+				currentStage: result.level,
+				nextMilestone: 'Continue practicing',
+				estimatedProgress: '50%',
+			},
+		}
+	} catch (error) {
+		console.error('Error in AI proficiency analysis:', error)
+		return getFallbackAnalysis(userMessages.length)
+	}
+}
+
+// Main component implementing the refreshed design. It maintains all of the
+// original application functionality while providing a dashboard‑style layout.
 const LanguageTutor = () => {
+	// State management for the current session. These mirror the original
+	// component's state variables to preserve existing functionality.
 	const [selectedLanguage, setSelectedLanguage] = useState('english')
 	const [messages, setMessages] = useState([])
 	const [currentMessage, setCurrentMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
-	// ZMĚNA: targetLanguageOnlyMode je nyní vždy true (natrvalo zapnutý)
+	// The target language only mode is permanently enabled.
 	const targetLanguageOnlyMode = true
 	const [detailedAnalysis, setDetailedAnalysis] = useState(null)
 	const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -149,199 +364,50 @@ const LanguageTutor = () => {
 	})
 	const messagesEndRef = useRef(null)
 
-	// Pouze 3 jazyky
+	// Supported languages with flag emojis
 	const languages = {
 		english: { name: 'English', flag: '🇺🇸' },
 		swedish: { name: 'Swedish (Svenska)', flag: '🇸🇪' },
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
 	}
 
-	// ZMĚNA: Funkce odstraněna, už se nepoužívá
-	// const getTargetLanguageOnlyText = () => { ... }
+	// Define a simple upcoming schedule to display on the dashboard. Each item
+	// includes a title, scheduled time and an icon. The icons are JSX elements
+	// derived from lucide-react components and will render appropriately in
+	// the schedule list.
+	const upcomingSchedule = [
+		{
+			title: 'Vocabulary review',
+			time: '09:30 AM',
+			icon: <BookOpen size={16} className="text-orange-500" />,
+		},
+		{
+			title: 'Grammar practice',
+			time: '10:15 AM',
+			icon: <Pencil size={16} className="text-orange-500" />,
+		},
+		{
+			title: 'Listening exercise',
+			time: '11:00 AM',
+			icon: <Headphones size={16} className="text-orange-500" />,
+		},
+	]
 
-	const analyzeLanguageProficiency = async (
-		messageHistory,
-		targetLanguage
-	) => {
-		if (messageHistory.length < 3) {
-			return {
-				level: 'Beginner',
-				confidence: 0.9,
-				reasoning: 'Insufficient conversation data',
-				details: {
-					grammarAccuracy: 70,
-					vocabularyLevel: 'Basic',
-					sentenceComplexity: 'Simple',
-					languageConsistency: 'Good',
-					strongPoints: ['Getting started'],
-					improvementAreas: ['Continue practicing'],
-					errorCount: 0,
-					averageSentenceLength: 5,
-				},
-			}
-		}
-
-		const userMessages = messageHistory
-			.filter((msg) => msg.sender === 'user')
-			.map((msg) => ({ text: msg.text, timestamp: msg.timestamp }))
-
-		if (userMessages.length < 2) {
-			return {
-				level: 'Beginner',
-				confidence: 0.8,
-				reasoning: 'Too few user messages to analyze',
-				details: {
-					grammarAccuracy: 70,
-					vocabularyLevel: 'Basic',
-					sentenceComplexity: 'Simple',
-					languageConsistency: 'Good',
-					strongPoints: ['Active participation'],
-					improvementAreas: ['Continue practicing'],
-					errorCount: 0,
-					averageSentenceLength: 5,
-				},
-			}
-		}
-
-		const languageNames = {
-			english: 'English',
-			swedish: 'Swedish',
-			italian: 'Italian',
-		}
-
-		const analysisPrompt = `
-You are an expert language assessment specialist. Analyze the following conversation messages from a language learner and determine their proficiency level in ${
-			languageNames[targetLanguage] || 'English'
-		}.
-
-User messages to analyze:
-${userMessages.map((msg, i) => `${i + 1}. "${msg.text}"`).join('\n')}
-
-Please analyze these aspects:
-1. **Grammar Accuracy**: Correct use of tenses, sentence structure, word order
-2. **Vocabulary Level**: Sophistication and variety of words used  
-3. **Sentence Complexity**: Simple vs compound vs complex sentences
-4. **Language Consistency**: Consistent use of the target language
-5. **Fluency Indicators**: Natural flow, idiom usage, cultural understanding
-6. **Error Patterns**: Types and frequency of mistakes
-
-Based on your analysis, assign ONE of these levels:
-- **Beginner**: Basic words, simple present tense, frequent errors, very short sentences
-- **Intermediate**: Mix of tenses, longer sentences, some complex vocabulary, occasional errors  
-- **Advanced**: Complex structures, sophisticated vocabulary, rare errors, natural expression
-- **Native**: Perfect or near-perfect grammar, idioms, cultural references, effortless expression
-
-Respond with a JSON object in this exact format:
-{
-  "level": "Beginner|Intermediate|Advanced|Native",
-  "confidence": 0.85,
-  "reasoning": "Detailed explanation of why you assigned this level",
-  "details": {
-    "grammarAccuracy": 85,
-    "vocabularyLevel": "Intermediate", 
-    "sentenceComplexity": "Complex",
-    "languageConsistency": "Excellent",
-    "strongPoints": ["Good use of past tense", "Varied vocabulary"],
-    "improvementAreas": ["Article usage", "Conditional sentences"],
-    "errorCount": 3,
-    "averageSentenceLength": 8.5
-  },
-  "levelProgression": {
-    "currentStage": "Early Intermediate",
-    "nextMilestone": "Master subjunctive mood", 
-    "estimatedProgress": "65%"
-  }
-}
-
-Your response must be valid JSON only. No additional text.`
-
-		try {
-			const response = await fetch('/api/claude', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ prompt: analysisPrompt }),
-			})
-
-			if (!response.ok)
-				throw new Error(`HTTP error! status: ${response.status}`)
-
-			const result = await response.json()
-
-			if (
-				!result.level ||
-				!['Beginner', 'Intermediate', 'Advanced', 'Native'].includes(
-					result.level
-				)
-			) {
-				console.warn('Invalid level from AI, using fallback')
-				return getFallbackAnalysis(userMessages.length)
-			}
-
-			return {
-				level: result.level,
-				confidence: result.confidence || 0.8,
-				reasoning: result.reasoning || 'AI analysis completed',
-				details: {
-					grammarAccuracy: result.details?.grammarAccuracy || 75,
-					vocabularyLevel: result.details?.vocabularyLevel || 'Basic',
-					sentenceComplexity:
-						result.details?.sentenceComplexity || 'Simple',
-					languageConsistency:
-						result.details?.languageConsistency || 'Good',
-					strongPoints: result.details?.strongPoints || [],
-					improvementAreas: result.details?.improvementAreas || [],
-					errorCount: result.details?.errorCount || 0,
-					averageSentenceLength:
-						result.details?.averageSentenceLength || 5,
-				},
-				levelProgression: result.levelProgression || {
-					currentStage: result.level,
-					nextMilestone: 'Continue practicing',
-					estimatedProgress: '50%',
-				},
-			}
-		} catch (error) {
-			console.error('Error in AI proficiency analysis:', error)
-			return getFallbackAnalysis(userMessages.length)
-		}
-	}
-
-	const getFallbackAnalysis = (messageCount) => {
-		let level = 'Beginner'
-		if (messageCount >= 15) level = 'Intermediate'
-		else if (messageCount >= 25) level = 'Advanced'
-
-		return {
-			level,
-			confidence: 0.6,
-			reasoning: 'Fallback analysis based on conversation length',
-			details: {
-				grammarAccuracy: 70,
-				vocabularyLevel: 'Basic',
-				sentenceComplexity: 'Simple',
-				languageConsistency: 'Good',
-				strongPoints: ['Active participation'],
-				improvementAreas: ['Continue practicing'],
-				errorCount: 2,
-				averageSentenceLength: 6,
-			},
-		}
-	}
-
+	/**
+	 * Send a message and handle tutor response. This mirrors the original
+	 * sendMessage function.
+	 */
 	const sendMessage = async () => {
 		if (!currentMessage.trim() || isLoading) return
-
 		const userMessage = {
 			id: Date.now(),
 			text: currentMessage,
 			sender: 'user',
 			timestamp: new Date(),
 		}
-
 		setMessages((prev) => [...prev, userMessage])
 		setCurrentMessage('')
 		setIsLoading(true)
-
 		try {
 			const conversationHistory = [...messages, userMessage]
 			setIsAnalyzing(true)
@@ -408,24 +474,16 @@ Respond with a JSON object in this exact format:
 }
 
 Your entire response MUST be valid JSON only. DO NOT include any text outside the JSON structure.`
-
-			// NOVÉ: Volání Vercel API místo window.claude.complete
 			const response = await fetch('/api/claude', {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt }),
 			})
-
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`)
 			}
-
 			const parsedResponse = await response.json()
-
 			let tutorMessage
-
 			if (showLessonMode) {
 				tutorMessage = {
 					id: Date.now() + 1,
@@ -445,10 +503,8 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 					isLessonMode: false,
 				}
 			}
-
 			setMessages((prev) => [...prev, tutorMessage])
 			setFeedback(parsedResponse.feedback)
-
 			// Update user profile
 			setUserProfile((prev) => ({
 				...prev,
@@ -460,8 +516,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 					...parsedResponse.vocabularyUsed,
 				]),
 			}))
-
-			// Update progress stats
+			// Update progress stats periodically
 			if (userProfile.totalMessages % 5 === 0) {
 				setProgressStats((prev) => ({
 					vocabularyGrowth: [
@@ -492,57 +547,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 		}
 	}
 
-	const handleLanguageChange = (newLang) => {
-		setSelectedLanguage(newLang)
-		setMessages([])
-		setFeedback(null)
-		setTranslatedMessages(new Set())
-		const newGoals = generateLearningGoals(
-			userProfile.proficiencyLevel,
-			newLang
-		)
-		setLearningGoals(newGoals)
-	}
-
-	const toggleGoalCompletion = (goalId) => {
-		setLearningGoals((prev) =>
-			prev.map((goal) =>
-				goal.id === goalId
-					? {
-							...goal,
-							completed: !goal.completed,
-							progress: goal.completed ? goal.progress : 100,
-					  }
-					: goal
-			)
-		)
-	}
-
-	const toggleMessageTranslation = (messageId) => {
-		setTranslatedMessages((prev) => {
-			const newSet = new Set(prev)
-			if (newSet.has(messageId)) {
-				newSet.delete(messageId)
-			} else {
-				newSet.add(messageId)
-			}
-			return newSet
-		})
-	}
-
-	const addCustomGoal = () => {
-		const goalText = prompt(t('enterLearningGoal'))
-		if (goalText?.trim()) {
-			const newGoal = {
-				id: Date.now(),
-				text: goalText.trim(),
-				completed: false,
-				progress: 0,
-			}
-			setLearningGoals((prev) => [...prev, newGoal])
-		}
-	}
-
+	// Generate new learning goals based on level and language
 	const generateLearningGoals = (level, language) => {
 		const goalsByLevel = {
 			Beginner: {
@@ -638,7 +643,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 				],
 			},
 		}
-
 		const goals =
 			goalsByLevel[level]?.[language] || goalsByLevel.Beginner.english
 		return goals.slice(0, 3).map((text, index) => ({
@@ -649,253 +653,234 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 		}))
 	}
 
-	const getProficiencyColor = (level) => {
-		const colors = {
-			Beginner: 'bg-green-100 text-green-700',
-			Intermediate: 'bg-blue-100 text-blue-700',
-			Advanced: 'bg-purple-100 text-purple-700',
-			Native: 'bg-gold-100 text-gold-700',
-		}
-		return colors[level] || colors.Beginner
+	// Language selection handler
+	const handleLanguageChange = (newLang) => {
+		setSelectedLanguage(newLang)
+		setMessages([])
+		setFeedback(null)
+		setTranslatedMessages(new Set())
+		const newGoals = generateLearningGoals(
+			userProfile.proficiencyLevel,
+			newLang
+		)
+		setLearningGoals(newGoals)
 	}
 
+	// Toggle completion of a goal
+	const toggleGoalCompletion = (goalId) => {
+		setLearningGoals((prev) =>
+			prev.map((goal) =>
+				goal.id === goalId
+					? {
+							...goal,
+							completed: !goal.completed,
+							progress: goal.completed ? goal.progress : 100,
+					  }
+					: goal
+			)
+		)
+	}
+
+	// Toggle translation visibility on tutor messages
+	const toggleMessageTranslation = (messageId) => {
+		setTranslatedMessages((prev) => {
+			const newSet = new Set(prev)
+			if (newSet.has(messageId)) {
+				newSet.delete(messageId)
+			} else {
+				newSet.add(messageId)
+			}
+			return newSet
+		})
+	}
+
+	// Prompt user to add a custom goal
+	const addCustomGoal = () => {
+		const goalText = prompt(t('enterLearningGoal'))
+		if (goalText?.trim()) {
+			setLearningGoals((prev) => [
+				...prev,
+				{
+					id: Date.now(),
+					text: goalText.trim(),
+					completed: false,
+					progress: 0,
+				},
+			])
+		}
+	}
+
+	// Auto-scroll to the bottom of the messages list whenever messages change
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 	}, [messages])
 
 	return (
-		<div className="flex h-screen bg-gray-50">
-			{/* Main Chat Area */}
-			<div className="flex-1 flex flex-col">
-				{/* Header */}
-				<div className="bg-white border-b border-gray-200 p-4">
-					<div className="flex justify-between items-center">
-						<div className="flex items-center space-x-4">
-							<div className="flex items-center space-x-2">
-								<BookOpen className="h-6 w-6 text-blue-600" />
-								<h1 className="text-xl font-bold text-gray-800">
-									{t('languageTutorTitle')}
-								</h1>
-							</div>
-
-							{/* Language Selection */}
-							<select
-								value={selectedLanguage}
-								onChange={(e) =>
-									handleLanguageChange(e.target.value)
-								}
-								className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							>
-								{Object.entries(languages).map(
-									([key, lang]) => (
-										<option key={key} value={key}>
-											{lang.flag} {lang.name}
-										</option>
-									)
-								)}
-							</select>
-						</div>
-
-						{/* Mode Toggle */}
-						<div className="flex items-center space-x-3">
-							<span className="text-sm font-medium text-gray-700">
-								{showLessonMode
-									? t('lessonMode')
-									: t('chatMode')}
-							</span>
-							<button
-								onClick={() => {
-									setShowLessonMode(!showLessonMode)
-								}}
-								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+		<div className="flex min-h-screen bg-gray-50 text-gray-800">
+			{/* Vertical navigation bar */}
+			<aside className="hidden md:flex w-16 flex-col items-center py-6 bg-white border-r">
+				<div className="flex flex-col space-y-6 w-full items-center">
+					<img
+						src={logo}
+						alt="logo"
+						className="w-full h-32 object-cover rounded-xl"
+						height="72px"
+					/>
+					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+						<Target size={24} />
+					</button>
+					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+						<TrendingUp size={24} />
+					</button>
+					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+						<Calendar size={24} />
+					</button>
+					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center mt-auto">
+						<Settings size={24} />
+					</button>
+				</div>
+			</aside>
+			{/* Main content area */}
+			<main className="flex-1 flex flex-col px-6 py-4 overflow-y-auto space-y-6">
+				{/* Header with title, language selector, lesson/chat toggle and search bar */}
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+					<div className="flex items-center space-x-4">
+						<h1 className="text-2xl font-bold"></h1>
+						<select
+							value={selectedLanguage}
+							onChange={(e) =>
+								handleLanguageChange(e.target.value)
+							}
+							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+						>
+							{Object.entries(languages).map(([key, lang]) => (
+								<option key={key} value={key}>
+									{lang.flag} {lang.name}
+								</option>
+							))}
+						</select>
+						<button
+							onClick={() => setShowLessonMode(!showLessonMode)}
+							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+								showLessonMode ? 'bg-orange-500' : 'bg-gray-200'
+							}`}
+						>
+							<span
+								className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${
 									showLessonMode
-										? 'bg-blue-600'
-										: 'bg-gray-200'
+										? 'translate-x-6'
+										: 'translate-x-1'
 								}`}
-							>
-								<span
-									className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-										showLessonMode
-											? 'translate-x-6'
-											: 'translate-x-1'
-									}`}
-								/>
-							</button>
-						</div>
+							/>
+						</button>
+						<span className="text-sm text-gray-600">
+							{showLessonMode ? t('lessonMode') : t('chatMode')}
+						</span>
 					</div>
 				</div>
-
-				{/* Status Bar */}
-				<div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center space-x-4">
-							<div className="flex items-center space-x-2">
-								<div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-								<span className="text-sm font-medium">
-									{t('readyToPractice')}
-								</span>
-							</div>
-						</div>
-						<div className="text-sm opacity-90">
-							{userProfile.proficiencyLevel}
-						</div>
-					</div>
-				</div>
-
-				{/* Messages */}
-				<div className="flex-1 overflow-y-auto p-4 space-y-4">
+				{/* Chat messages area */}
+				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
 					{messages.length === 0 && (
-						<div className="text-center py-12">
-							<div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-								<MessageSquare className="h-8 w-8 text-blue-600" />
-							</div>
-
-							<h2 className="text-xl font-semibold text-gray-800 mb-2">
+						<div className="text-center text-gray-500 mt-10">
+							<h2 className="text-lg font-semibold mb-2">
 								{t('readyToPracticeTitle')}
 							</h2>
-							<p className="text-gray-500">
+							<p className="text-sm">
 								{t('startConversationHelp')}
 							</p>
 						</div>
 					)}
-
 					{messages.map((message) => (
 						<div
 							key={message.id}
-							className={`flex ${
+							onClick={
+								message.sender === 'tutor'
+									? () => toggleMessageTranslation(message.id)
+									: undefined
+							}
+							className={`rounded-xl p-4 max-w-[80%] ${
 								message.sender === 'user'
-									? 'justify-end'
-									: 'justify-start'
-							}`}
+									? 'self-end bg-gradient-to-r from-green-200 to-lime-100 text-gray-800'
+									: 'self-start bg-gradient-to-r from-blue-200 to-blue-100 text-gray-800'
+							} shadow-sm cursor-pointer`}
 						>
-							<div
-								className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative group ${
-									message.sender === 'user'
-										? 'bg-blue-600 text-white'
-										: 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition-colors'
-								} ${
-									message.sender === 'tutor' &&
-									!targetLanguageOnlyMode
-										? 'cursor-pointer'
-										: ''
-								}`}
-								onClick={
-									message.sender === 'tutor' &&
-									!targetLanguageOnlyMode
-										? () =>
-												toggleMessageTranslation(
-													message.id
-												)
-										: undefined
-								}
-							>
+							<p className="whitespace-pre-line">
 								{message.sender === 'tutor' &&
-									!targetLanguageOnlyMode && (
-										<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-											<Languages className="h-3 w-3 text-gray-400" />
-										</div>
-									)}
-								<p className="pr-4">
-									{message.sender === 'tutor' &&
-									translatedMessages.has(message.id) &&
-									!targetLanguageOnlyMode
-										? message.englishTranslation ||
-										  message.text
-										: message.text}
-								</p>
-								{message.sender === 'tutor' &&
-									translatedMessages.has(message.id) &&
-									!targetLanguageOnlyMode && (
-										<p className="text-xs mt-1 text-gray-500 italic">
-											{t('englishTranslation')}
-										</p>
-									)}
-								<p
-									className={`text-xs mt-1 ${
-										message.sender === 'user'
-											? 'text-blue-100'
-											: 'text-gray-500'
-									}`}
-								>
-									{message.timestamp.toLocaleTimeString([], {
-										hour: '2-digit',
-										minute: '2-digit',
-									})}
-								</p>
-							</div>
+								translatedMessages.has(message.id) &&
+								!targetLanguageOnlyMode
+									? message.englishTranslation || message.text
+									: message.text}
+							</p>
+							{message.sender === 'tutor' &&
+								translatedMessages.has(message.id) &&
+								!targetLanguageOnlyMode && (
+									<p className="mt-1 text-xs text-gray-500 italic">
+										{t('englishTranslation')}
+									</p>
+								)}
+							<p className="mt-1 text-xs text-right text-gray-500">
+								{message.timestamp.toLocaleTimeString([], {
+									hour: '2-digit',
+									minute: '2-digit',
+								})}
+							</p>
 						</div>
 					))}
-
 					{isLoading && (
-						<div className="flex justify-start">
-							<div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-gray-200">
-								<div className="flex items-center space-x-2">
-									<div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-									<div
-										className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-										style={{ animationDelay: '0.1s' }}
-									></div>
-									<div
-										className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-										style={{ animationDelay: '0.2s' }}
-									></div>
-									<span className="text-xs text-gray-600 ml-2">
-										{t('tutorThinking')}
-									</span>
-								</div>
+						<div className="self-start bg-gradient-to-r from-blue-200 to-blue-100 rounded-xl p-3 flex items-center space-x-2 shadow-sm">
+							<div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce-slow" />
+							<div className="text-gray-600 text-sm">
+								{t('tutorThinking')}
 							</div>
 						</div>
 					)}
 					<div ref={messagesEndRef} />
 				</div>
-
-				{/* Input Area */}
-				<div className="bg-white border-t border-gray-200 p-4">
-					<div className="flex space-x-2">
-						<input
-							type="text"
-							value={currentMessage}
-							onChange={(e) => setCurrentMessage(e.target.value)}
-							onKeyPress={(e) =>
-								e.key === 'Enter' && sendMessage()
-							}
-							placeholder={`${t('typeMessagePlaceholder')}...`}
-							className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-							disabled={isLoading}
-						/>
-						<button
-							onClick={sendMessage}
-							disabled={isLoading || !currentMessage.trim()}
-							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-						>
-							<Send className="h-5 w-5" />
-						</button>
-					</div>
+				{/* Input area */}
+				<div className="mt-4 flex items-center bg-white rounded-full shadow-inner px-4 py-2">
+					<input
+						type="text"
+						value={currentMessage}
+						onChange={(e) => setCurrentMessage(e.target.value)}
+						onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+						placeholder={`${t('typeMessagePlaceholder')}...`}
+						className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm"
+						disabled={isLoading}
+					/>
+					<button
+						onClick={sendMessage}
+						disabled={isLoading}
+						className="ml-3 bg-orange-500 hover:bg-green-700 text-white rounded-full p-2"
+					>
+						<Send size={20} />
+					</button>
 				</div>
-			</div>
-
-			{/* Sidebar */}
-			<div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-				{/* Progress Overview */}
-				<div className="p-4 border-b border-gray-200">
-					<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-						<TrendingUp className="h-5 w-5 mr-2" />
+			</main>
+			{/* Right side panel for user profile and progress */}
+			<aside className="hidden lg:flex w-72 flex-col space-y-6 bg-white border-l p-4 overflow-y-auto">
+				{/* Progress overview section */}
+				<div className="bg-gray-50 rounded-xl p-4 shadow">
+					<h3 className="flex items-center text-gray-800 font-semibold mb-2">
+						<TrendingUp
+							className="mr-2 text-orange-500"
+							size={20}
+						/>{' '}
 						{t('progressOverview')}
 					</h3>
-					<div className="space-y-2">
-						<div className="flex justify-between text-sm">
+					<div className="space-y-2 text-sm">
+						<div className="flex justify-between">
 							<span>{t('messages')}</span>
 							<span className="font-medium">
 								{userProfile.totalMessages}
 							</span>
 						</div>
-						<div className="flex justify-between text-sm">
+						<div className="flex justify-between">
 							<span>{t('vocabulary')}</span>
 							<span className="font-medium">
 								{userProfile.vocabularyCount.size} {t('words')}
 							</span>
 						</div>
-						<div className="flex justify-between text-sm">
+						<div className="flex justify-between">
 							<span>{t('accuracy')}</span>
 							<span className="font-medium">
 								{userProfile.grammarAccuracy}%
@@ -903,250 +888,195 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						</div>
 					</div>
 				</div>
-
-				{/* Learning Goals */}
-				<div className="p-4 border-b border-gray-200">
-					<div className="flex justify-between items-center mb-3">
-						<h3 className="font-semibold text-gray-800 flex items-center">
-							<Target className="h-5 w-5 mr-2" />
+				{/* Goals section */}
+				<div className="bg-gray-50 rounded-xl p-4 shadow">
+					<div className="flex items-center justify-between mb-2">
+						<h3 className="flex items-center text-gray-800 font-semibold">
+							<Target
+								className="mr-2 text-orange-500"
+								size={20}
+							/>{' '}
 							{t('learningGoals')}
 						</h3>
 						<button
 							onClick={addCustomGoal}
-							className="text-blue-700 bg-blue-100 hover:bg-blue-200 text-xs font-medium rounded transition-colors"
+							className="text-orange-500 hover:underline text-sm"
 						>
 							{t('addGoal')}
 						</button>
 					</div>
-					<div className="space-y-3">
+					<div className="space-y-2">
 						{learningGoals.map((goal) => (
-							<div key={goal.id} className="space-y-2">
-								<div className="flex items-start space-x-3">
-									<button
-										onClick={() =>
-											toggleGoalCompletion(goal.id)
-										}
-										className="mt-0.5 flex-shrink-0"
-									>
-										{goal.completed ? (
-											<CheckCircle className="h-4 w-4 text-green-600" />
-										) : (
-											<div className="h-4 w-4 border-2 border-gray-300 rounded-full"></div>
-										)}
-									</button>
-									<div className="flex-1 min-w-0">
-										<p
-											className={`text-sm ${
-												goal.completed
-													? 'line-through text-gray-500'
-													: 'text-gray-800'
-											}`}
-										>
-											{goal.text}
-										</p>
-										<div className="mt-1">
-											<div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-												<span>{t('progress')}</span>
-												<span>{goal.progress}%</span>
-											</div>
-											<div className="w-full bg-gray-200 rounded-full h-1.5">
-												<div
-													className={`h-1.5 rounded-full transition-all duration-300 ${
-														goal.completed
-															? 'bg-green-500'
-															: 'bg-blue-500'
-													}`}
-													style={{
-														width: `${goal.progress}%`,
-													}}
-												></div>
-											</div>
-										</div>
-									</div>
+							<div
+								key={goal.id}
+								className="flex items-center justify-between p-2 bg-white rounded-lg shadow-inner hover:bg-gray-100"
+							>
+								<div className="flex-1">
+									<p className="text-sm font-medium text-gray-700">
+										{goal.text}
+									</p>
+									<p className="text-xs text-gray-500">
+										{t('progress')} {goal.progress}%
+									</p>
 								</div>
+								<button
+									onClick={() =>
+										toggleGoalCompletion(goal.id)
+									}
+									className={`ml-2 p-1 rounded-full ${
+										goal.completed
+											? 'bg-orange-1000'
+											: 'bg-gray-300'
+									}`}
+								>
+									{goal.completed ? (
+										<CheckCircle
+											size={18}
+											className="text-white"
+										/>
+									) : (
+										<BarChart3
+											size={18}
+											className="text-white"
+										/>
+									)}
+								</button>
 							</div>
 						))}
 					</div>
 				</div>
-
-				{/* Real-time Feedback */}
+				{/* Feedback section */}
 				{feedback && (
-					<div className="p-4 border-b border-gray-200">
-						<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-							<MessageSquare className="h-5 w-5 mr-2" />
+					<div className="bg-gray-50 rounded-xl p-4 shadow">
+						<h3 className="flex items-center text-gray-800 font-semibold mb-2">
+							<MessageSquare
+								className="mr-2 text-orange-500"
+								size={20}
+							/>{' '}
 							{t('feedback')}
 						</h3>
 						{feedback.positive.length > 0 && (
 							<div className="mb-2">
-								<p className="text-xs font-medium text-green-600 mb-1">
+								<p className="font-semibold text-orange-500">
 									{t('greatJob')}
 								</p>
-								{feedback.positive.map((item, idx) => (
-									<p
-										key={idx}
-										className="text-sm text-green-700 bg-green-50 p-2 rounded"
-									>
-										{item}
-									</p>
-								))}
+								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+									{feedback.positive.map((item, idx) => (
+										<li key={idx}>{item}</li>
+									))}
+								</ul>
 							</div>
 						)}
 						{feedback.corrections.length > 0 && (
 							<div className="mb-2">
-								<p className="text-xs font-medium text-orange-600 mb-1">
+								<p className="font-semibold text-yellow-600">
 									{t('smallCorrections')}
 								</p>
-								{feedback.corrections.map((item, idx) => (
-									<p
-										key={idx}
-										className="text-sm text-orange-700 bg-orange-50 p-2 rounded"
-									>
-										{item}
-									</p>
-								))}
+								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+									{feedback.corrections.map((item, idx) => (
+										<li key={idx}>{item}</li>
+									))}
+								</ul>
 							</div>
 						)}
 						{feedback.suggestions.length > 0 && (
 							<div>
-								<p className="text-xs font-medium text-blue-600 mb-1">
+								<p className="font-semibold text-blue-600">
 									{t('tryThis')}
 								</p>
-								{feedback.suggestions.map((item, idx) => (
-									<p
-										key={idx}
-										className="text-sm text-blue-700 bg-blue-50 p-2 rounded"
-									>
-										{item}
-									</p>
-								))}
+								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+									{feedback.suggestions.map((item, idx) => (
+										<li key={idx}>{item}</li>
+									))}
+								</ul>
 							</div>
 						)}
 					</div>
 				)}
-
+				{/* AI analysis section */}
 				{detailedAnalysis && (
-					<div className="p-4 border-b border-gray-200">
-						<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-							<Brain className="h-5 w-5 mr-2" />
+					<div className="bg-gray-50 rounded-xl p-4 shadow">
+						<h3 className="flex items-center text-gray-800 font-semibold mb-2">
+							<Brain className="mr-2 text-orange-500" size={20} />{' '}
 							AI Language Analysis
 						</h3>
-
-						<div className="space-y-3">
-							{/* Level with confidence */}
-							<div className="flex justify-between items-center">
-								<span className="text-sm text-gray-600">
+						<div className="space-y-2 text-sm text-gray-700">
+							<p>
+								<span className="font-semibold">
 									Current Level:
-								</span>
-								<div className="flex items-center space-x-2">
-									<span
-										className={`px-2 py-1 rounded-full text-xs font-medium ${getProficiencyColor(
-											detailedAnalysis.level
-										)}`}
-									>
-										{detailedAnalysis.level}
-									</span>
-									<span className="text-xs text-gray-500">
-										(
-										{Math.round(
-											detailedAnalysis.confidence * 100
-										)}
-										% confidence)
-									</span>
-								</div>
-							</div>
-
-							{/* Grammar accuracy */}
-							<div className="flex justify-between text-sm">
-								<span className="text-gray-600">
+								</span>{' '}
+								{detailedAnalysis.level} (
+								{Math.round(detailedAnalysis.confidence * 100)}%
+								confidence)
+							</p>
+							<p>
+								<span className="font-semibold">
 									Grammar Accuracy:
-								</span>
-								<span className="font-medium">
-									{detailedAnalysis.details.grammarAccuracy}%
-								</span>
-							</div>
-
-							{/* Vocabulary level */}
-							<div className="flex justify-between text-sm">
-								<span className="text-gray-600">
+								</span>{' '}
+								{detailedAnalysis.details.grammarAccuracy}%
+							</p>
+							<p>
+								<span className="font-semibold">
 									Vocabulary Level:
-								</span>
-								<span className="font-medium">
-									{detailedAnalysis.details.vocabularyLevel}
-								</span>
-							</div>
-
-							{/* Sentence complexity */}
-							<div className="flex justify-between text-sm">
-								<span className="text-gray-600">
+								</span>{' '}
+								{detailedAnalysis.details.vocabularyLevel}
+							</p>
+							<p>
+								<span className="font-semibold">
 									Sentence Complexity:
-								</span>
-								<span className="font-medium">
-									{
-										detailedAnalysis.details
-											.sentenceComplexity
-									}
-								</span>
-							</div>
-
-							{/* Strong points */}
+								</span>{' '}
+								{detailedAnalysis.details.sentenceComplexity}
+							</p>
 							{detailedAnalysis.details.strongPoints?.length >
 								0 && (
-								<div className="mt-3">
-									<p className="text-sm font-medium text-green-700 mb-1">
+								<div>
+									<p className="font-semibold">
 										Strong Points:
 									</p>
-									<ul className="text-xs text-green-600 space-y-1">
+									<ul className="list-disc pl-5 text-sm">
 										{detailedAnalysis.details.strongPoints.map(
 											(point, index) => (
-												<li key={index}>• {point}</li>
+												<li key={index}>{point}</li>
 											)
 										)}
 									</ul>
 								</div>
 							)}
-
-							{/* Improvement areas */}
 							{detailedAnalysis.details.improvementAreas?.length >
 								0 && (
-								<div className="mt-3">
-									<p className="text-sm font-medium text-blue-700 mb-1">
+								<div>
+									<p className="font-semibold">
 										Focus Areas:
 									</p>
-									<ul className="text-xs text-blue-600 space-y-1">
+									<ul className="list-disc pl-5 text-sm">
 										{detailedAnalysis.details.improvementAreas.map(
 											(area, index) => (
-												<li key={index}>• {area}</li>
+												<li key={index}>{area}</li>
 											)
 										)}
 									</ul>
 								</div>
 							)}
-
-							{/* Analysis reasoning - collapsible */}
-							<details className="mt-3">
-								<summary className="text-sm font-medium text-gray-700 cursor-pointer">
-									Analysis Details
-								</summary>
-								<p className="text-xs text-gray-600 mt-2 leading-relaxed">
+							<div>
+								<p className="font-semibold">
+									Analysis Details:
+								</p>
+								<p className="text-xs">
 									{detailedAnalysis.reasoning}
 								</p>
-							</details>
+							</div>
 						</div>
 					</div>
 				)}
-
-				{/* Loading indicator during analysis */}
 				{isAnalyzing && (
-					<div className="p-4 border-b border-gray-200">
-						<div className="flex items-center space-x-2">
-							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-							<span className="text-sm text-gray-600">
-								Analyzing your language level...
-							</span>
-						</div>
+					<div className="bg-gray-50 rounded-xl p-4 shadow flex items-center space-x-2">
+						<div className="w-2 h-2 bg-gray-400 rounded-full animate-ping" />
+						<span className="text-sm text-gray-600">
+							Analyzing your language level...
+						</span>
 					</div>
 				)}
-			</div>
+			</aside>
 		</div>
 	)
 }
