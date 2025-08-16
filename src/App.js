@@ -27,7 +27,7 @@ const TRANSLATIONS = {
 			'Začněte konverzaci a já vám pomohu se učit s personalizovanou zpětnou vazbou!',
 		nativeTranslation: 'Český překlad',
 		tutorThinking: 'Tutor přemýšlí...',
-		typeMessagePlaceholder: 'Napište zprávu v',
+		typeMessagePlaceholder: 'Napište zprávu v jazyce, který se učíte',
 		progressOverview: 'Přehled Pokroku',
 		messages: 'Zprávy:',
 		vocabulary: 'Slovní zásoba:',
@@ -46,7 +46,9 @@ const TRANSLATIONS = {
 		enterLearningGoal: 'Zadejte svůj výukový cíl:',
 		addGoalButton: 'Přidat cíl',
 		cancel: 'Zrušit',
-		englishOnly: 'Pouze anglicky',
+		onlyEnglish: 'Pouze anglicky',
+		onlySwedish: 'Pouze švédsky',
+		onlyItalian: 'Pouze italsky',
 		withTranslations: 'S překlady',
 		languageMode: 'Režim jazyka:',
 		startListening: 'Klikněte pro mluvení',
@@ -156,7 +158,7 @@ const LanguageTutor = () => {
 	})
 	const [showGoalModal, setShowGoalModal] = useState(false)
 	const [newGoalText, setNewGoalText] = useState('')
-	const [englishOnlyMode, setEnglishOnlyMode] = useState(false)
+	const [targetLanguageOnlyMode, setTargetLanguageOnlyMode] = useState(false)
 	const [isListening, setIsListening] = useState(false)
 	const [speechEnabled, setSpeechEnabled] = useState(true)
 	const [recognition, setRecognition] = useState(null)
@@ -166,14 +168,17 @@ const LanguageTutor = () => {
 
 	const languages = {
 		english: { name: 'English', flag: '🇺🇸' },
-		spanish: { name: 'Spanish (Español)', flag: '🇪🇸' },
-		french: { name: 'French (Français)', flag: '🇫🇷' },
-		german: { name: 'German (Deutsch)', flag: '🇩🇪' },
-		japanese: { name: 'Japanese (日本語)', flag: '🇯🇵' },
+		swedish: { name: 'Swedish (Svenska)', flag: '🇸🇪' },
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
-		portuguese: { name: 'Portuguese (Português)', flag: '🇵🇹' },
-		chinese: { name: 'Chinese (中文)', flag: '🇨🇳' },
-		korean: { name: 'Korean (한국어)', flag: '🇰🇷' },
+	}
+
+	const getTargetLanguageOnlyText = () => {
+		const languageTexts = {
+			english: t('onlyEnglish'),
+			swedish: t('onlySwedish'),
+			italian: t('onlyItalian'),
+		}
+		return languageTexts[selectedLanguage] || t('onlyEnglish')
 	}
 
 	useEffect(() => {
@@ -197,14 +202,8 @@ const LanguageTutor = () => {
 	const getLanguageCode = (language) => {
 		const languageCodes = {
 			english: 'en-US',
-			spanish: 'es-ES',
-			french: 'fr-FR',
-			german: 'de-DE',
-			japanese: 'ja-JP',
+			swedish: 'sv-SE',
 			italian: 'it-IT',
-			portuguese: 'pt-PT',
-			chinese: 'zh-CN',
-			korean: 'ko-KR',
 		}
 		return languageCodes[language] || 'en-US'
 	}
@@ -438,7 +437,7 @@ const LanguageTutor = () => {
 				userProfile: {
 					proficiencyLevel: detectedLevel,
 					learningGoals: learningGoals.map((g) => g.text),
-					englishOnlyMode,
+					targetLanguageOnlyMode, // změněno z englishOnlyMode
 					showLessonMode,
 					selectedLanguage: languages[selectedLanguage].name,
 				},
@@ -581,16 +580,18 @@ const LanguageTutor = () => {
 								</span>
 								<button
 									onClick={() =>
-										setEnglishOnlyMode(!englishOnlyMode)
+										setTargetLanguageOnlyMode(
+											!targetLanguageOnlyMode
+										)
 									}
 									className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-										englishOnlyMode
+										targetLanguageOnlyMode
 											? 'bg-red-100 text-red-700 border border-red-200'
 											: 'bg-green-100 text-green-700 border border-green-200'
 									}`}
 								>
-									{englishOnlyMode
-										? t('englishOnly')
+									{targetLanguageOnlyMode
+										? getTargetLanguageOnlyText()
 										: t('withTranslations')}
 								</button>
 							</div>
@@ -742,9 +743,9 @@ const LanguageTutor = () => {
 								onKeyPress={(e) =>
 									e.key === 'Enter' && sendMessage()
 								}
-								placeholder={`${t('typeMessagePlaceholder')} ${
-									languages[selectedLanguage].name
-								}...`}
+								placeholder={`${t(
+									'typeMessagePlaceholder'
+								)}...`}
 								className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								disabled={isLoading}
 							/>
