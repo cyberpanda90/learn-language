@@ -1,20 +1,10 @@
-// Rebuilt App.js with a refreshed 2025 design. This version maintains the
-// original application logic (state management, AI calls and translation
-// handling) while introducing a modern dashboard layout inspired by
-// productivity apps. It features a vertical navigation bar, a central chat
-// panel with an upcoming schedule, and a right‑hand panel containing user
-// profile details, progress statistics, goals, feedback and AI analysis. The
-// look and feel draw on green and blue gradients, rounded cards and
-// minimalist typography to evoke a desktop iOS aesthetic.
-
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
 	Send,
 	Target,
 	TrendingUp,
 	MessageSquare,
 	CheckCircle,
-	BarChart3,
 	Brain,
 	Home,
 	Calendar,
@@ -25,18 +15,14 @@ import {
 	Headphones,
 } from 'lucide-react'
 
-// Import a decorative abstract cityscape used in the profile section. This
-// image was generated to match the colour palette of the supplied design
-// reference (greens and blues with a flat, minimal aesthetic).
 import cityImage from './assets/city.png'
-import logo from './assets/logo.png'
+import nyImage from './assets/ny.png'
+import romeImage from './assets/rome.png'
+import stockholmImage from './assets/stockholm.png'
 
-// Internationalised strings. Additional locales can be added to this object
-// following the same structure. The default locale is detected from the browser
-// but can be overridden via the appLocale constant.
 const TRANSLATIONS = {
 	'en-US': {
-		languageTutorTitle: 'Učslov',
+		languageTutorTitle: 'Language Tutor',
 		lessonMode: 'Lesson Mode',
 		chatMode: 'Chat Mode',
 		readyToPractice: 'Ready to practice',
@@ -72,7 +58,7 @@ const TRANSLATIONS = {
 		withTranslations: 'With translations',
 	},
 	'cs-CZ': {
-		languageTutorTitle: 'Učslov',
+		languageTutorTitle: 'Jazykový Tutor',
 		lessonMode: 'Režim Lekce',
 		chatMode: 'Režim Konverzace',
 		readyToPractice: 'Připraven procvičovat',
@@ -357,11 +343,6 @@ const LanguageTutor = () => {
 	const [feedback, setFeedback] = useState(null)
 	const [showLessonMode, setShowLessonMode] = useState(false)
 	const [translatedMessages, setTranslatedMessages] = useState(new Set())
-	const [progressStats, setProgressStats] = useState({
-		vocabularyGrowth: [20, 35, 50, 65, 78],
-		grammarAccuracy: [60, 65, 70, 75, 80],
-		conversationLength: [5, 8, 12, 15, 18],
-	})
 	const messagesEndRef = useRef(null)
 
 	// Supported languages with flag emojis
@@ -371,6 +352,16 @@ const LanguageTutor = () => {
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
 	}
 
+	// Map each language to its corresponding abstract cityscape. These images are
+	// used in the user profile card and update automatically when the user
+	// switches languages.
+	const cityImages = {
+		english: nyImage,
+		italian: romeImage,
+		swedish: stockholmImage,
+	}
+	const profileImage = cityImages[selectedLanguage] || cityImage
+
 	// Define a simple upcoming schedule to display on the dashboard. Each item
 	// includes a title, scheduled time and an icon. The icons are JSX elements
 	// derived from lucide-react components and will render appropriately in
@@ -379,17 +370,17 @@ const LanguageTutor = () => {
 		{
 			title: 'Vocabulary review',
 			time: '09:30 AM',
-			icon: <BookOpen size={16} className="text-orange-500" />,
+			icon: <BookOpen size={16} className="text-green-600" />,
 		},
 		{
 			title: 'Grammar practice',
 			time: '10:15 AM',
-			icon: <Pencil size={16} className="text-orange-500" />,
+			icon: <Pencil size={16} className="text-green-600" />,
 		},
 		{
 			title: 'Listening exercise',
 			time: '11:00 AM',
-			icon: <Headphones size={16} className="text-orange-500" />,
+			icon: <Headphones size={16} className="text-green-600" />,
 		},
 	]
 
@@ -516,23 +507,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 					...parsedResponse.vocabularyUsed,
 				]),
 			}))
-			// Update progress stats periodically
-			if (userProfile.totalMessages % 5 === 0) {
-				setProgressStats((prev) => ({
-					vocabularyGrowth: [
-						...prev.vocabularyGrowth,
-						userProfile.vocabularyCount.size,
-					],
-					grammarAccuracy: [
-						...prev.grammarAccuracy,
-						parsedResponse.grammarAnalysis.accuracy,
-					],
-					conversationLength: [
-						...prev.conversationLength,
-						conversationHistory.length,
-					],
-				}))
-			}
 		} catch (error) {
 			console.error('Error getting tutor response:', error)
 			const errorMessage = {
@@ -716,26 +690,24 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 	}, [messages])
 
 	return (
-		<div className="flex min-h-screen bg-gray-50 text-gray-800">
+		<div className="flex h-screen bg-base-200 text-base-content">
 			{/* Vertical navigation bar */}
-			<aside className="hidden md:flex w-16 flex-col items-center py-6 bg-white border-r">
+			<aside className="hidden md:flex w-16 flex-col items-center py-6 bg-base-100 border-r border-base-300">
 				<div className="flex flex-col space-y-6 w-full items-center">
-					<img
-						src={logo}
-						alt="logo"
-						className="w-full h-32 object-cover rounded-xl"
-						height="72px"
-					/>
-					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+					{/* Primary nav icons - highlight the chat icon as active */}
+					<button className="btn btn-ghost btn-square text-primary bg-primary/10 flex items-center justify-center">
+						<Home size={24} />
+					</button>
+					<button className="btn btn-ghost btn-square text-base-content hover:text-primary flex items-center justify-center">
 						<Target size={24} />
 					</button>
-					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+					<button className="btn btn-ghost btn-square text-base-content hover:text-primary flex items-center justify-center">
 						<TrendingUp size={24} />
 					</button>
-					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center">
+					<button className="btn btn-ghost btn-square text-base-content hover:text-primary flex items-center justify-center">
 						<Calendar size={24} />
 					</button>
-					<button className="p-2 rounded-xl hover:bg-orange-100 hover:text-orange-500 text-gray-500 flex items-center justify-center mt-auto">
+					<button className="btn btn-ghost btn-square text-base-content hover:text-primary flex items-center justify-center mt-auto">
 						<Settings size={24} />
 					</button>
 				</div>
@@ -745,13 +717,15 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 				{/* Header with title, language selector, lesson/chat toggle and search bar */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
 					<div className="flex items-center space-x-4">
-						<h1 className="text-2xl font-bold"></h1>
+						<h1 className="text-xl font-semibold">
+							{t('languageTutorTitle')}
+						</h1>
 						<select
 							value={selectedLanguage}
 							onChange={(e) =>
 								handleLanguageChange(e.target.value)
 							}
-							className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+							className="select select-bordered select-sm"
 						>
 							{Object.entries(languages).map(([key, lang]) => (
 								<option key={key} value={key}>
@@ -759,23 +733,33 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 								</option>
 							))}
 						</select>
-						<button
-							onClick={() => setShowLessonMode(!showLessonMode)}
-							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-								showLessonMode ? 'bg-orange-500' : 'bg-gray-200'
-							}`}
-						>
-							<span
-								className={`inline-block h-4 w-4 transform bg-white rounded-full transition-transform ${
-									showLessonMode
-										? 'translate-x-6'
-										: 'translate-x-1'
-								}`}
+						<label className="flex items-center cursor-pointer space-x-2">
+							<input
+								type="checkbox"
+								className="toggle toggle-primary toggle-sm"
+								checked={showLessonMode}
+								onChange={() =>
+									setShowLessonMode(!showLessonMode)
+								}
 							/>
-						</button>
-						<span className="text-sm text-gray-600">
-							{showLessonMode ? t('lessonMode') : t('chatMode')}
-						</span>
+							<span className="text-sm">
+								{showLessonMode
+									? t('lessonMode')
+									: t('chatMode')}
+							</span>
+						</label>
+					</div>
+					{/* Search bar */}
+					<div className="relative w-full max-w-xs">
+						<input
+							type="text"
+							placeholder={t('typeMessagePlaceholder')}
+							className="input input-sm input-bordered w-full pl-4 pr-10"
+						/>
+						<Search
+							size={16}
+							className="absolute right-3 top-1/2 transform -translate-y-1/2 opacity-50"
+						/>
 					</div>
 				</div>
 				{/* Chat messages area */}
@@ -800,9 +784,9 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							}
 							className={`rounded-xl p-4 max-w-[80%] ${
 								message.sender === 'user'
-									? 'self-end bg-gradient-to-r from-green-200 to-lime-100 text-gray-800'
-									: 'self-start bg-gradient-to-r from-blue-200 to-blue-100 text-gray-800'
-							} shadow-sm cursor-pointer`}
+									? 'self-end bg-primary text-primary-content'
+									: 'self-start bg-secondary text-secondary-content'
+							} shadow cursor-pointer`}
 						>
 							<p className="whitespace-pre-line">
 								{message.sender === 'tutor' &&
@@ -827,251 +811,360 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						</div>
 					))}
 					{isLoading && (
-						<div className="self-start bg-gradient-to-r from-blue-200 to-blue-100 rounded-xl p-3 flex items-center space-x-2 shadow-sm">
-							<div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce-slow" />
-							<div className="text-gray-600 text-sm">
-								{t('tutorThinking')}
-							</div>
+						<div className="self-start bg-secondary text-secondary-content rounded-xl p-3 flex items-center space-x-2 shadow">
+							<span className="loading loading-spinner loading-xs"></span>
+							<div className="text-sm">{t('tutorThinking')}</div>
 						</div>
 					)}
 					<div ref={messagesEndRef} />
 				</div>
 				{/* Input area */}
-				<div className="mt-4 flex items-center bg-white rounded-full shadow-inner px-4 py-2">
+				<div className="mt-4 flex items-center gap-2">
 					<input
 						type="text"
 						value={currentMessage}
 						onChange={(e) => setCurrentMessage(e.target.value)}
 						onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
 						placeholder={`${t('typeMessagePlaceholder')}...`}
-						className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm"
+						className="input input-bordered w-full"
 						disabled={isLoading}
 					/>
 					<button
 						onClick={sendMessage}
 						disabled={isLoading}
-						className="ml-3 bg-orange-500 hover:bg-green-700 text-white rounded-full p-2"
+						className="btn btn-primary btn-square"
 					>
 						<Send size={20} />
 					</button>
 				</div>
+				{/* Upcoming schedule card */}
+				<div className="card bg-base-100 shadow">
+					<div className="card-body p-4">
+						<h3 className="flex items-center font-semibold mb-3">
+							<Calendar className="mr-2 text-primary" size={20} />
+							<span>Upcoming Schedule</span>
+						</h3>
+						<div className="space-y-2">
+							{upcomingSchedule.map((item, idx) => (
+								<div
+									key={idx}
+									className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-base-200"
+								>
+									<div className="flex items-center space-x-3 text-sm">
+										<span className="text-primary">
+											{item.icon}
+										</span>
+										<span className="font-medium">
+											{item.title}
+										</span>
+									</div>
+									<span className="text-xs opacity-60">
+										{item.time}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
 			</main>
 			{/* Right side panel for user profile and progress */}
-			<aside className="hidden lg:flex w-72 flex-col space-y-6 bg-white border-l p-4 overflow-y-auto">
+			<aside className="hidden lg:flex w-72 flex-col space-y-4 bg-base-100 border-l border-base-300 p-4 overflow-y-auto">
+				{/* User profile with decorative image */}
+				<div className="relative">
+					<img
+						src={profileImage}
+						alt="City skyline"
+						className="w-full h-32 object-cover rounded-box"
+					/>
+					<div className="absolute inset-0 bg-gradient-to-t from-base-100 via-transparent to-transparent rounded-box" />
+					<div className="absolute bottom-2 left-3 flex items-center space-x-3">
+						<div className="avatar placeholder">
+							<div className="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">
+								{userProfile.proficiencyLevel[0] || 'B'}
+							</div>
+						</div>
+						<div>
+							<p className="text-sm font-medium">Jack Grealish</p>
+							<p className="text-xs opacity-60">
+								{t('readyToPractice')}
+							</p>
+						</div>
+					</div>
+					<button className="absolute top-2 right-2 btn btn-xs btn-ghost bg-base-100/70">
+						Edit
+					</button>
+				</div>
+				{/* Working hours / timezone section */}
+				<div className="card bg-base-200 shadow">
+					<div className="card-body p-3">
+						<p className="text-xs opacity-60 mb-1">
+							Working hours:
+						</p>
+						<div className="flex items-center justify-between text-sm">
+							<span className="opacity-60">09:00 AM</span>
+							<span className="opacity-60">05:00 PM</span>
+						</div>
+						<p className="text-xs opacity-60 mt-2">
+							Prague, Czechia • GMT+2
+						</p>
+					</div>
+				</div>
 				{/* Progress overview section */}
-				<div className="bg-gray-50 rounded-xl p-4 shadow">
-					<h3 className="flex items-center text-gray-800 font-semibold mb-2">
-						<TrendingUp
-							className="mr-2 text-orange-500"
-							size={20}
-						/>{' '}
-						{t('progressOverview')}
-					</h3>
-					<div className="space-y-2 text-sm">
-						<div className="flex justify-between">
-							<span>{t('messages')}</span>
-							<span className="font-medium">
-								{userProfile.totalMessages}
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<span>{t('vocabulary')}</span>
-							<span className="font-medium">
-								{userProfile.vocabularyCount.size} {t('words')}
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<span>{t('accuracy')}</span>
-							<span className="font-medium">
-								{userProfile.grammarAccuracy}%
-							</span>
+				<div className="card bg-base-200 shadow">
+					<div className="card-body p-4">
+						<h3 className="flex items-center font-semibold mb-2">
+							<TrendingUp
+								className="mr-2 text-primary"
+								size={20}
+							/>{' '}
+							{t('progressOverview')}
+						</h3>
+						<div className="space-y-2 text-sm">
+							<div className="flex justify-between">
+								<span>{t('messages')}</span>
+								<span className="font-medium">
+									{userProfile.totalMessages}
+								</span>
+							</div>
+							<div className="flex justify-between">
+								<span>{t('vocabulary')}</span>
+								<span className="font-medium">
+									{userProfile.vocabularyCount.size}{' '}
+									{t('words')}
+								</span>
+							</div>
+							<div className="flex justify-between">
+								<span>{t('accuracy')}</span>
+								<span className="font-medium">
+									{userProfile.grammarAccuracy}%
+								</span>
+							</div>
+							{/* DaisyUI progress bars */}
+							<div className="mt-2 space-y-2">
+								<progress
+									className="progress progress-primary w-full h-2"
+									value={Math.min(
+										userProfile.grammarAccuracy,
+										100
+									)}
+									max="100"
+								></progress>
+								<progress
+									className="progress progress-secondary w-full h-2"
+									value={Math.min(
+										userProfile.vocabularyCount.size,
+										100
+									)}
+									max="100"
+								></progress>
+							</div>
 						</div>
 					</div>
 				</div>
 				{/* Goals section */}
-				<div className="bg-gray-50 rounded-xl p-4 shadow">
-					<div className="flex items-center justify-between mb-2">
-						<h3 className="flex items-center text-gray-800 font-semibold">
-							<Target
-								className="mr-2 text-orange-500"
-								size={20}
-							/>{' '}
-							{t('learningGoals')}
-						</h3>
-						<button
-							onClick={addCustomGoal}
-							className="text-orange-500 hover:underline text-sm"
-						>
-							{t('addGoal')}
-						</button>
-					</div>
-					<div className="space-y-2">
-						{learningGoals.map((goal) => (
-							<div
-								key={goal.id}
-								className="flex items-center justify-between p-2 bg-white rounded-lg shadow-inner hover:bg-gray-100"
+				<div className="card bg-base-200 shadow">
+					<div className="card-body p-4">
+						<div className="flex items-center justify-between mb-2">
+							<h3 className="flex items-center font-semibold">
+								<Target
+									className="mr-2 text-primary"
+									size={20}
+								/>{' '}
+								{t('learningGoals')}
+							</h3>
+							<button
+								onClick={addCustomGoal}
+								className="btn btn-xs btn-outline btn-primary"
 							>
-								<div className="flex-1">
-									<p className="text-sm font-medium text-gray-700">
-										{goal.text}
-									</p>
-									<p className="text-xs text-gray-500">
-										{t('progress')} {goal.progress}%
-									</p>
-								</div>
-								<button
-									onClick={() =>
-										toggleGoalCompletion(goal.id)
-									}
-									className={`ml-2 p-1 rounded-full ${
-										goal.completed
-											? 'bg-orange-1000'
-											: 'bg-gray-300'
-									}`}
+								{t('addGoal')}
+							</button>
+						</div>
+						<ul className="space-y-2">
+							{learningGoals.map((goal) => (
+								<li
+									key={goal.id}
+									className="flex items-center justify-between p-2 bg-base-100 rounded-box"
 								>
-									{goal.completed ? (
-										<CheckCircle
-											size={18}
-											className="text-white"
-										/>
-									) : (
-										<BarChart3
-											size={18}
-											className="text-white"
-										/>
-									)}
-								</button>
-							</div>
-						))}
+									<div className="flex-1">
+										<p className="text-sm font-medium">
+											{goal.text}
+										</p>
+										<p className="text-xs opacity-60">
+											{t('progress')} {goal.progress}%
+										</p>
+									</div>
+									<button
+										onClick={() =>
+											toggleGoalCompletion(goal.id)
+										}
+										className={`btn btn-xs btn-circle ${
+											goal.completed
+												? 'btn-success'
+												: 'btn-ghost'
+										}`}
+									>
+										{goal.completed ? (
+											<CheckCircle size={16} />
+										) : (
+											<div className="w-3 h-3 rounded-full border border-base-content"></div>
+										)}
+									</button>
+								</li>
+							))}
+						</ul>
 					</div>
 				</div>
 				{/* Feedback section */}
 				{feedback && (
-					<div className="bg-gray-50 rounded-xl p-4 shadow">
-						<h3 className="flex items-center text-gray-800 font-semibold mb-2">
-							<MessageSquare
-								className="mr-2 text-orange-500"
-								size={20}
-							/>{' '}
-							{t('feedback')}
-						</h3>
-						{feedback.positive.length > 0 && (
-							<div className="mb-2">
-								<p className="font-semibold text-orange-500">
-									{t('greatJob')}
-								</p>
-								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-									{feedback.positive.map((item, idx) => (
-										<li key={idx}>{item}</li>
-									))}
-								</ul>
-							</div>
-						)}
-						{feedback.corrections.length > 0 && (
-							<div className="mb-2">
-								<p className="font-semibold text-yellow-600">
-									{t('smallCorrections')}
-								</p>
-								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-									{feedback.corrections.map((item, idx) => (
-										<li key={idx}>{item}</li>
-									))}
-								</ul>
-							</div>
-						)}
-						{feedback.suggestions.length > 0 && (
-							<div>
-								<p className="font-semibold text-blue-600">
-									{t('tryThis')}
-								</p>
-								<ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-									{feedback.suggestions.map((item, idx) => (
-										<li key={idx}>{item}</li>
-									))}
-								</ul>
-							</div>
-						)}
+					<div className="card bg-base-200 shadow">
+						<div className="card-body p-4">
+							<h3 className="flex items-center font-semibold mb-2">
+								<MessageSquare
+									className="mr-2 text-primary"
+									size={20}
+								/>{' '}
+								{t('feedback')}
+							</h3>
+							{feedback.positive?.length > 0 && (
+								<div className="mb-2">
+									<p className="font-semibold text-success">
+										{t('greatJob')}
+									</p>
+									<ul className="list-disc pl-5 text-sm space-y-1">
+										{feedback.positive.map((item, idx) => (
+											<li key={idx}>{item}</li>
+										))}
+									</ul>
+								</div>
+							)}
+							{feedback.corrections?.length > 0 && (
+								<div className="mb-2">
+									<p className="font-semibold text-warning">
+										{t('smallCorrections')}
+									</p>
+									<ul className="list-disc pl-5 text-sm space-y-1">
+										{feedback.corrections.map(
+											(item, idx) => (
+												<li key={idx}>{item}</li>
+											)
+										)}
+									</ul>
+								</div>
+							)}
+							{feedback.suggestions?.length > 0 && (
+								<div>
+									<p className="font-semibold text-info">
+										{t('tryThis')}
+									</p>
+									<ul className="list-disc pl-5 text-sm space-y-1">
+										{feedback.suggestions.map(
+											(item, idx) => (
+												<li key={idx}>{item}</li>
+											)
+										)}
+									</ul>
+								</div>
+							)}
+						</div>
 					</div>
 				)}
 				{/* AI analysis section */}
 				{detailedAnalysis && (
-					<div className="bg-gray-50 rounded-xl p-4 shadow">
-						<h3 className="flex items-center text-gray-800 font-semibold mb-2">
-							<Brain className="mr-2 text-orange-500" size={20} />{' '}
-							AI Language Analysis
-						</h3>
-						<div className="space-y-2 text-sm text-gray-700">
-							<p>
-								<span className="font-semibold">
-									Current Level:
-								</span>{' '}
-								{detailedAnalysis.level} (
-								{Math.round(detailedAnalysis.confidence * 100)}%
-								confidence)
-							</p>
-							<p>
-								<span className="font-semibold">
-									Grammar Accuracy:
-								</span>{' '}
-								{detailedAnalysis.details.grammarAccuracy}%
-							</p>
-							<p>
-								<span className="font-semibold">
-									Vocabulary Level:
-								</span>{' '}
-								{detailedAnalysis.details.vocabularyLevel}
-							</p>
-							<p>
-								<span className="font-semibold">
-									Sentence Complexity:
-								</span>{' '}
-								{detailedAnalysis.details.sentenceComplexity}
-							</p>
-							{detailedAnalysis.details.strongPoints?.length >
-								0 && (
+					<div className="card bg-base-200 shadow">
+						<div className="card-body p-4">
+							<h3 className="flex items-center font-semibold mb-2">
+								<Brain
+									className="mr-2 text-primary"
+									size={20}
+								/>{' '}
+								AI Language Analysis
+							</h3>
+							<div className="space-y-2 text-sm">
+								<p>
+									<span className="font-semibold">
+										Current Level:
+									</span>{' '}
+									{detailedAnalysis.level} (
+									{Math.round(
+										detailedAnalysis.confidence * 100
+									)}
+									% confidence)
+								</p>
+								<p>
+									<span className="font-semibold">
+										Grammar Accuracy:
+									</span>{' '}
+									{detailedAnalysis.details.grammarAccuracy}%
+								</p>
+								<p>
+									<span className="font-semibold">
+										Vocabulary Level:
+									</span>{' '}
+									{detailedAnalysis.details.vocabularyLevel}
+								</p>
+								<p>
+									<span className="font-semibold">
+										Sentence Complexity:
+									</span>{' '}
+									{
+										detailedAnalysis.details
+											.sentenceComplexity
+									}
+								</p>
+								{detailedAnalysis.details.strongPoints?.length >
+									0 && (
+									<div>
+										<p className="font-semibold">
+											Strong Points:
+										</p>
+										<ul className="list-disc pl-5 text-sm space-y-1">
+											{detailedAnalysis.details.strongPoints.map(
+												(point, index) => (
+													<li key={index}>{point}</li>
+												)
+											)}
+										</ul>
+									</div>
+								)}
+								{detailedAnalysis.details.improvementAreas
+									?.length > 0 && (
+									<div>
+										<p className="font-semibold">
+											Focus Areas:
+										</p>
+										<ul className="list-disc pl-5 text-sm space-y-1">
+											{detailedAnalysis.details.improvementAreas.map(
+												(area, index) => (
+													<li key={index}>{area}</li>
+												)
+											)}
+										</ul>
+									</div>
+								)}
 								<div>
 									<p className="font-semibold">
-										Strong Points:
+										Analysis Details:
 									</p>
-									<ul className="list-disc pl-5 text-sm">
-										{detailedAnalysis.details.strongPoints.map(
-											(point, index) => (
-												<li key={index}>{point}</li>
-											)
-										)}
-									</ul>
-								</div>
-							)}
-							{detailedAnalysis.details.improvementAreas?.length >
-								0 && (
-								<div>
-									<p className="font-semibold">
-										Focus Areas:
+									<p className="text-xs">
+										{detailedAnalysis.reasoning}
 									</p>
-									<ul className="list-disc pl-5 text-sm">
-										{detailedAnalysis.details.improvementAreas.map(
-											(area, index) => (
-												<li key={index}>{area}</li>
-											)
-										)}
-									</ul>
 								</div>
-							)}
-							<div>
-								<p className="font-semibold">
-									Analysis Details:
-								</p>
-								<p className="text-xs">
-									{detailedAnalysis.reasoning}
-								</p>
 							</div>
 						</div>
 					</div>
 				)}
+				<div
+					className="radial-progress"
+					style={{ '--value': 70 } /* as React.CSSProperties */}
+					aria-valuenow={70}
+					role="progressbar"
+				>
+					70%
+				</div>
 				{isAnalyzing && (
-					<div className="bg-gray-50 rounded-xl p-4 shadow flex items-center space-x-2">
-						<div className="w-2 h-2 bg-gray-400 rounded-full animate-ping" />
-						<span className="text-sm text-gray-600">
+					<div className="card bg-base-200 shadow flex items-center gap-2 p-4">
+						<span className="loading loading-spinner loading-xs"></span>
+						<span className="text-sm">
 							Analyzing your language level...
 						</span>
 					</div>
