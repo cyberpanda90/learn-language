@@ -106,7 +106,8 @@ const LanguageTutor = () => {
 	const [messages, setMessages] = useState([])
 	const [currentMessage, setCurrentMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
-	const [targetLanguageOnlyMode, setTargetLanguageOnlyMode] = useState(false)
+	// ZMĚNA: targetLanguageOnlyMode je nyní vždy true (natrvalo zapnutý)
+	const targetLanguageOnlyMode = true
 	const [detailedAnalysis, setDetailedAnalysis] = useState(null)
 	const [isAnalyzing, setIsAnalyzing] = useState(false)
 	const [userProfile, setUserProfile] = useState({
@@ -153,139 +154,8 @@ const LanguageTutor = () => {
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
 	}
 
-	// Funkce pro dynamický text tlačítka
-	const getTargetLanguageOnlyText = () => {
-		const languageTexts = {
-			english: t('onlyEnglish'),
-			swedish: t('onlySwedish'),
-			italian: t('onlyItalian'),
-		}
-		return languageTexts[selectedLanguage] || t('onlyEnglish')
-	}
-
-	useEffect(() => {
-		scrollToBottom()
-	}, [messages])
-
-	const scrollToBottom = () => {
-		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-	}
-
-	const getProficiencyColor = (level) => {
-		const colors = {
-			Beginner: 'text-green-600 bg-green-100',
-			Intermediate: 'text-yellow-600 bg-yellow-100',
-			Advanced: 'text-red-600 bg-red-100',
-			Native: 'text-purple-600 bg-purple-100',
-		}
-		return colors[level] || colors.Beginner
-	}
-
-	const generateLearningGoals = (level, language) => {
-		const goalsByLevel = {
-			Beginner: {
-				english: [
-					'Master basic greetings and introductions',
-					'Learn present tense regular verbs',
-					'Build everyday vocabulary',
-					'Practice numbers 1-100',
-					'Use basic question words (what, how, where)',
-				],
-				swedish: [
-					'Master basic greetings (hej, hå)',
-					'Learn present tense verbs',
-					'Build family and home vocabulary',
-					'Practice Swedish pronunciation',
-					'Use basic question words',
-				],
-				italian: [
-					'Master basic greetings (ciao, buongiorno)',
-					'Learn present tense essere and avere',
-					'Build food and family vocabulary',
-					'Practice Italian pronunciation',
-					'Learn basic sentence structure',
-				],
-			},
-			Intermediate: {
-				english: [
-					'Master past tenses',
-					'Learn conditional mood',
-					'Expand professional vocabulary',
-					'Practice complex sentence structures',
-					'Understand cultural expressions',
-				],
-				swedish: [
-					'Master past tenses (preteritum and perfekt)',
-					'Learn Swedish word order',
-					'Expand professional vocabulary',
-					'Practice complex sentence structures',
-					'Understand Swedish culture',
-				],
-				italian: [
-					'Master past tenses (passato prossimo and imperfetto)',
-					'Learn subjunctive mood basics',
-					'Expand professional vocabulary',
-					'Practice complex sentence structures',
-					'Understand Italian culture',
-				],
-			},
-			Advanced: {
-				english: [
-					'Master all verb tenses',
-					'Learn advanced conditional sentences',
-					'Expand idiomatic expressions',
-					'Practice nuanced conversation skills',
-					'Understand cultural references',
-				],
-				swedish: [
-					'Master all verb tenses (inklusive futurum och konjunktiv)',
-					'Learn advanced Swedish syntax',
-					'Expand idiomatic expressions',
-					'Practice nuanced conversation skills',
-					'Understand Swedish cultural references',
-				],
-				italian: [
-					'Master all verb tenses (inklusive futuro anteriore och congiuntivo)',
-					'Learn advanced Italian syntax',
-					'Expand idiomatic expressions',
-					'Practice nuanced conversation skills',
-					'Understand Italian cultural references',
-				],
-			},
-			Native: {
-				english: [
-					'Maintain fluency in all tenses',
-					'Use idiomatic expressions naturally',
-					'Engage in complex discussions',
-					'Understand cultural nuances deeply',
-					'Teach others about the language',
-				],
-				swedish: [
-					'Maintain fluency in all tenses (inklusive futurum och konjunktiv)',
-					'Use idiomatic expressions naturally',
-					'Engage in complex discussions',
-					'Understand cultural nuances deeply',
-					'Teach others about the language',
-				],
-				italian: [
-					'Maintain fluency in all tenses (inklusive futuro anteriore och congiuntivo)',
-					'Use idiomatic expressions naturally',
-					'Engage in complex discussions',
-					'Understand cultural nuances deeply',
-					'Teach others about the language',
-				],
-			},
-		}
-
-		const goals =
-			goalsByLevel[level]?.[language] || goalsByLevel.Beginner.english
-		return goals.slice(0, 3).map((text, index) => ({
-			id: Date.now() + index,
-			text,
-			completed: false,
-			progress: Math.floor(Math.random() * 30),
-		}))
-	}
+	// ZMĚNA: Funkce odstraněna, už se nepoužívá
+	// const getTargetLanguageOnlyText = () => { ... }
 
 	const analyzeLanguageProficiency = async (
 		messageHistory,
@@ -657,6 +527,126 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 		}
 	}
 
+	const generateLearningGoals = (level, language) => {
+		const goalsByLevel = {
+			Beginner: {
+				english: [
+					'Master basic greetings and introductions',
+					'Learn present tense regular verbs',
+					'Build everyday vocabulary',
+					'Practice numbers 1-100',
+					'Use basic question words (what, how, where)',
+				],
+				swedish: [
+					'Master basic greetings (hej, hå)',
+					'Learn present tense verbs',
+					'Build family and home vocabulary',
+					'Practice Swedish pronunciation',
+					'Use basic question words',
+				],
+				italian: [
+					'Master basic greetings (ciao, buongiorno)',
+					'Learn present tense essere and avere',
+					'Build food and family vocabulary',
+					'Practice Italian pronunciation',
+					'Learn basic sentence structure',
+				],
+			},
+			Intermediate: {
+				english: [
+					'Master past tenses',
+					'Learn conditional mood',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand cultural expressions',
+				],
+				swedish: [
+					'Master past tenses (preteritum and perfekt)',
+					'Learn Swedish word order',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand Swedish culture',
+				],
+				italian: [
+					'Master past tenses (passato prossimo and imperfetto)',
+					'Learn subjunctive mood basics',
+					'Expand professional vocabulary',
+					'Practice complex sentence structures',
+					'Understand Italian culture',
+				],
+			},
+			Advanced: {
+				english: [
+					'Master all verb tenses',
+					'Learn advanced conditional sentences',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand cultural references',
+				],
+				swedish: [
+					'Master all verb tenses (inklusive futurum och konjunktiv)',
+					'Learn advanced Swedish syntax',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand Swedish cultural references',
+				],
+				italian: [
+					'Master all verb tenses (inklusive futuro anteriore och congiuntivo)',
+					'Learn advanced Italian syntax',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand Italian cultural references',
+				],
+			},
+			Native: {
+				english: [
+					'Maintain fluency in all tenses',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
+				],
+				swedish: [
+					'Maintain fluency in all tenses (inklusive futurum och konjunktiv)',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
+				],
+				italian: [
+					'Maintain fluency in all tenses (inklusive futuro anteriore och congiuntivo)',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
+				],
+			},
+		}
+
+		const goals =
+			goalsByLevel[level]?.[language] || goalsByLevel.Beginner.english
+		return goals.slice(0, 3).map((text, index) => ({
+			id: Date.now() + index,
+			text,
+			completed: false,
+			progress: Math.floor(Math.random() * 30),
+		}))
+	}
+
+	const getProficiencyColor = (level) => {
+		const colors = {
+			Beginner: 'bg-green-100 text-green-700',
+			Intermediate: 'bg-blue-100 text-blue-700',
+			Advanced: 'bg-purple-100 text-purple-700',
+			Native: 'bg-gold-100 text-gold-700',
+		}
+		return colors[level] || colors.Beginner
+	}
+
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+	}, [messages])
+
 	return (
 		<div className="flex h-screen bg-gray-50">
 			{/* Main Chat Area */}
@@ -698,29 +688,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						</div>
 
 						<div className="flex items-center space-x-2">
-							{/* Dynamické tlačítko pro jazyk */}
-							<div className="flex items-center space-x-2">
-								<span className="text-sm text-gray-600">
-									{t('languageMode')}
-								</span>
-								<button
-									onClick={() =>
-										setTargetLanguageOnlyMode(
-											!targetLanguageOnlyMode
-										)
-									}
-									className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-										targetLanguageOnlyMode
-											? 'bg-red-100 text-red-700 border border-red-200'
-											: 'bg-green-100 text-green-700 border border-green-200'
-									}`}
-								>
-									{targetLanguageOnlyMode
-										? getTargetLanguageOnlyText()
-										: t('withTranslations')}
-								</button>
-							</div>
-
 							<button
 								onClick={() =>
 									setShowLessonMode(!showLessonMode)
