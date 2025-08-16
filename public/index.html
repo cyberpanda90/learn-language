@@ -12,6 +12,11 @@
 		<link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
 		<link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 		<script src="https://cdn.tailwindcss.com"></script>
+		<link
+			href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+			rel="stylesheet"
+			type="text/css"
+		/>
 		<script>
 			tailwind.config = {
 				theme: {
@@ -22,9 +27,12 @@
 						},
 					},
 				},
+				daisyui: {
+					themes: ['light'],
+				},
 			}
 		</script>
-		<title>Language Tutor - AI jazykový učitel</title>
+		<title>Učslov</title>
 	</head>
 	<body>
 		<noscript>You need to enable JavaScript to run this app.</noscript>

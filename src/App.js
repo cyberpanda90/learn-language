@@ -6,7 +6,7 @@ import {
 	MessageSquare,
 	CheckCircle,
 	Brain,
-	Home,
+	MessageCircle,
 	Calendar,
 	Settings,
 	Search,
@@ -58,7 +58,7 @@ const TRANSLATIONS = {
 		withTranslations: 'With translations',
 	},
 	'cs-CZ': {
-		languageTutorTitle: 'Jazykový Tutor',
+		languageTutorTitle: 'Učslov',
 		lessonMode: 'Režim Lekce',
 		chatMode: 'Režim Konverzace',
 		readyToPractice: 'Připraven procvičovat',
@@ -351,38 +351,6 @@ const LanguageTutor = () => {
 		swedish: { name: 'Swedish (Svenska)', flag: '🇸🇪' },
 		italian: { name: 'Italian (Italiano)', flag: '🇮🇹' },
 	}
-
-	// Map each language to its corresponding abstract cityscape. These images are
-	// used in the user profile card and update automatically when the user
-	// switches languages.
-	const cityImages = {
-		english: nyImage,
-		italian: romeImage,
-		swedish: stockholmImage,
-	}
-	const profileImage = cityImages[selectedLanguage] || cityImage
-
-	// Define a simple upcoming schedule to display on the dashboard. Each item
-	// includes a title, scheduled time and an icon. The icons are JSX elements
-	// derived from lucide-react components and will render appropriately in
-	// the schedule list.
-	const upcomingSchedule = [
-		{
-			title: 'Vocabulary review',
-			time: '09:30 AM',
-			icon: <BookOpen size={16} className="text-green-600" />,
-		},
-		{
-			title: 'Grammar practice',
-			time: '10:15 AM',
-			icon: <Pencil size={16} className="text-green-600" />,
-		},
-		{
-			title: 'Listening exercise',
-			time: '11:00 AM',
-			icon: <Headphones size={16} className="text-green-600" />,
-		},
-	]
 
 	/**
 	 * Send a message and handle tutor response. This mirrors the original
@@ -696,7 +664,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 				<div className="flex flex-col space-y-6 w-full items-center">
 					{/* Primary nav icons - highlight the chat icon as active */}
 					<button className="btn btn-ghost btn-square text-primary bg-primary/10 flex items-center justify-center">
-						<Home size={24} />
+						<MessageCircle size={24} />
 					</button>
 					<button className="btn btn-ghost btn-square text-base-content hover:text-primary flex items-center justify-center">
 						<Target size={24} />
@@ -749,18 +717,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							</span>
 						</label>
 					</div>
-					{/* Search bar */}
-					<div className="relative w-full max-w-xs">
-						<input
-							type="text"
-							placeholder={t('typeMessagePlaceholder')}
-							className="input input-sm input-bordered w-full pl-4 pr-10"
-						/>
-						<Search
-							size={16}
-							className="absolute right-3 top-1/2 transform -translate-y-1/2 opacity-50"
-						/>
-					</div>
 				</div>
 				{/* Chat messages area */}
 				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
@@ -782,32 +738,39 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 									? () => toggleMessageTranslation(message.id)
 									: undefined
 							}
-							className={`rounded-xl p-4 max-w-[80%] ${
+							className={`chat ${
 								message.sender === 'user'
-									? 'self-end bg-primary text-primary-content'
-									: 'self-start bg-secondary text-secondary-content'
-							} shadow cursor-pointer`}
+									? 'chat-end'
+									: 'chat-start'
+							}`}
 						>
-							<p className="whitespace-pre-line">
+							<div className="chat-image avatar">
+								<div className="w-10 rounded-full">
+									<img
+										src={`https://img.daisyui.com/images/profile/demo/${
+											message.sender === 'user'
+												? 'superperson'
+												: 'batperson'
+										}@192.webp`}
+										alt="Učitel"
+									/>
+								</div>
+							</div>
+							<div className="chat-header">
+								<time className="text-xs opacity-50">
+									{message.timestamp.toLocaleTimeString([], {
+										hour: '2-digit',
+										minute: '2-digit',
+									})}
+								</time>
+							</div>
+							<div className="chat-bubble">
 								{message.sender === 'tutor' &&
 								translatedMessages.has(message.id) &&
 								!targetLanguageOnlyMode
 									? message.englishTranslation || message.text
 									: message.text}
-							</p>
-							{message.sender === 'tutor' &&
-								translatedMessages.has(message.id) &&
-								!targetLanguageOnlyMode && (
-									<p className="mt-1 text-xs text-gray-500 italic">
-										{t('englishTranslation')}
-									</p>
-								)}
-							<p className="mt-1 text-xs text-right text-gray-500">
-								{message.timestamp.toLocaleTimeString([], {
-									hour: '2-digit',
-									minute: '2-digit',
-								})}
-							</p>
+							</div>
 						</div>
 					))}
 					{isLoading && (
@@ -837,78 +800,9 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						<Send size={20} />
 					</button>
 				</div>
-				{/* Upcoming schedule card */}
-				<div className="card bg-base-100 shadow">
-					<div className="card-body p-4">
-						<h3 className="flex items-center font-semibold mb-3">
-							<Calendar className="mr-2 text-primary" size={20} />
-							<span>Upcoming Schedule</span>
-						</h3>
-						<div className="space-y-2">
-							{upcomingSchedule.map((item, idx) => (
-								<div
-									key={idx}
-									className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-base-200"
-								>
-									<div className="flex items-center space-x-3 text-sm">
-										<span className="text-primary">
-											{item.icon}
-										</span>
-										<span className="font-medium">
-											{item.title}
-										</span>
-									</div>
-									<span className="text-xs opacity-60">
-										{item.time}
-									</span>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
 			</main>
 			{/* Right side panel for user profile and progress */}
 			<aside className="hidden lg:flex w-72 flex-col space-y-4 bg-base-100 border-l border-base-300 p-4 overflow-y-auto">
-				{/* User profile with decorative image */}
-				<div className="relative">
-					<img
-						src={profileImage}
-						alt="City skyline"
-						className="w-full h-32 object-cover rounded-box"
-					/>
-					<div className="absolute inset-0 bg-gradient-to-t from-base-100 via-transparent to-transparent rounded-box" />
-					<div className="absolute bottom-2 left-3 flex items-center space-x-3">
-						<div className="avatar placeholder">
-							<div className="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">
-								{userProfile.proficiencyLevel[0] || 'B'}
-							</div>
-						</div>
-						<div>
-							<p className="text-sm font-medium">Jack Grealish</p>
-							<p className="text-xs opacity-60">
-								{t('readyToPractice')}
-							</p>
-						</div>
-					</div>
-					<button className="absolute top-2 right-2 btn btn-xs btn-ghost bg-base-100/70">
-						Edit
-					</button>
-				</div>
-				{/* Working hours / timezone section */}
-				<div className="card bg-base-200 shadow">
-					<div className="card-body p-3">
-						<p className="text-xs opacity-60 mb-1">
-							Working hours:
-						</p>
-						<div className="flex items-center justify-between text-sm">
-							<span className="opacity-60">09:00 AM</span>
-							<span className="opacity-60">05:00 PM</span>
-						</div>
-						<p className="text-xs opacity-60 mt-2">
-							Prague, Czechia • GMT+2
-						</p>
-					</div>
-				</div>
 				{/* Progress overview section */}
 				<div className="card bg-base-200 shadow">
 					<div className="card-body p-4">
@@ -938,25 +832,6 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 								<span className="font-medium">
 									{userProfile.grammarAccuracy}%
 								</span>
-							</div>
-							{/* DaisyUI progress bars */}
-							<div className="mt-2 space-y-2">
-								<progress
-									className="progress progress-primary w-full h-2"
-									value={Math.min(
-										userProfile.grammarAccuracy,
-										100
-									)}
-									max="100"
-								></progress>
-								<progress
-									className="progress progress-secondary w-full h-2"
-									value={Math.min(
-										userProfile.vocabularyCount.size,
-										100
-									)}
-									max="100"
-								></progress>
 							</div>
 						</div>
 					</div>
@@ -1027,7 +902,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							</h3>
 							{feedback.positive?.length > 0 && (
 								<div className="mb-2">
-									<p className="font-semibold text-success">
+									<p className="font-semibold text-success text-sm">
 										{t('greatJob')}
 									</p>
 									<ul className="list-disc pl-5 text-sm space-y-1">
@@ -1039,7 +914,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							)}
 							{feedback.corrections?.length > 0 && (
 								<div className="mb-2">
-									<p className="font-semibold text-warning">
+									<p className="font-semibold text-warning text-sm">
 										{t('smallCorrections')}
 									</p>
 									<ul className="list-disc pl-5 text-sm space-y-1">
@@ -1053,7 +928,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 							)}
 							{feedback.suggestions?.length > 0 && (
 								<div>
-									<p className="font-semibold text-info">
+									<p className="font-semibold text-info text-sm">
 										{t('tryThis')}
 									</p>
 									<ul className="list-disc pl-5 text-sm space-y-1">
@@ -1153,14 +1028,7 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 						</div>
 					</div>
 				)}
-				<div
-					className="radial-progress"
-					style={{ '--value': 70 } /* as React.CSSProperties */}
-					aria-valuenow={70}
-					role="progressbar"
-				>
-					70%
-				</div>
+
 				{isAnalyzing && (
 					<div className="card bg-base-200 shadow flex items-center gap-2 p-4">
 						<span className="loading loading-spinner loading-xs"></span>
