@@ -5,10 +5,7 @@ import {
 	Target,
 	TrendingUp,
 	MessageSquare,
-	Settings,
 	CheckCircle,
-	AlertCircle,
-	Star,
 	BarChart3,
 	Languages,
 } from 'lucide-react'
@@ -227,6 +224,52 @@ const LanguageTutor = () => {
 					'Expand professional vocabulary',
 					'Practice complex sentence structures',
 					'Understand Italian culture',
+				],
+			},
+			Advanced: {
+				english: [
+					'Master all verb tenses',
+					'Learn advanced conditional sentences',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand cultural references',
+				],
+				swedish: [
+					'Master all verb tenses (inklusive futurum och konjunktiv)',
+					'Learn advanced Swedish syntax',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand Swedish cultural references',
+				],
+				italian: [
+					'Master all verb tenses (inklusive futuro anteriore och congiuntivo)',
+					'Learn advanced Italian syntax',
+					'Expand idiomatic expressions',
+					'Practice nuanced conversation skills',
+					'Understand Italian cultural references',
+				],
+			},
+			Native: {
+				english: [
+					'Maintain fluency in all tenses',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
+				],
+				swedish: [
+					'Maintain fluency in all tenses (inklusive futurum och konjunktiv)',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
+				],
+				italian: [
+					'Maintain fluency in all tenses (inklusive futuro anteriore och congiuntivo)',
+					'Use idiomatic expressions naturally',
+					'Engage in complex discussions',
+					'Understand cultural nuances deeply',
+					'Teach others about the language',
 				],
 			},
 		}
