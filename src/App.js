@@ -8,6 +8,7 @@ import {
 	CheckCircle,
 	BarChart3,
 	Languages,
+	Brain,
 } from 'lucide-react'
 
 const TRANSLATIONS = {
@@ -106,6 +107,8 @@ const LanguageTutor = () => {
 	const [currentMessage, setCurrentMessage] = useState('')
 	const [isLoading, setIsLoading] = useState(false)
 	const [targetLanguageOnlyMode, setTargetLanguageOnlyMode] = useState(false)
+	const [detailedAnalysis, setDetailedAnalysis] = useState(null)
+	const [isAnalyzing, setIsAnalyzing] = useState(false)
 	const [userProfile, setUserProfile] = useState({
 		proficiencyLevel: 'Beginner',
 		totalMessages: 0,
@@ -284,11 +287,173 @@ const LanguageTutor = () => {
 		}))
 	}
 
-	const analyzeProficiencyLevel = (messageHistory) => {
-		if (messageHistory.length < 3) return 'Beginner'
-		if (messageHistory.length < 10) return 'Beginner'
-		if (messageHistory.length < 20) return 'Intermediate'
-		return 'Advanced'
+	const analyzeLanguageProficiency = async (
+		messageHistory,
+		targetLanguage
+	) => {
+		if (messageHistory.length < 3) {
+			return {
+				level: 'Beginner',
+				confidence: 0.9,
+				reasoning: 'Insufficient conversation data',
+				details: {
+					grammarAccuracy: 70,
+					vocabularyLevel: 'Basic',
+					sentenceComplexity: 'Simple',
+					languageConsistency: 'Good',
+					strongPoints: ['Getting started'],
+					improvementAreas: ['Continue practicing'],
+					errorCount: 0,
+					averageSentenceLength: 5,
+				},
+			}
+		}
+
+		const userMessages = messageHistory
+			.filter((msg) => msg.sender === 'user')
+			.map((msg) => ({ text: msg.text, timestamp: msg.timestamp }))
+
+		if (userMessages.length < 2) {
+			return {
+				level: 'Beginner',
+				confidence: 0.8,
+				reasoning: 'Too few user messages to analyze',
+				details: {
+					grammarAccuracy: 70,
+					vocabularyLevel: 'Basic',
+					sentenceComplexity: 'Simple',
+					languageConsistency: 'Good',
+					strongPoints: ['Active participation'],
+					improvementAreas: ['Continue practicing'],
+					errorCount: 0,
+					averageSentenceLength: 5,
+				},
+			}
+		}
+
+		const languageNames = {
+			english: 'English',
+			swedish: 'Swedish',
+			italian: 'Italian',
+		}
+
+		const analysisPrompt = `
+You are an expert language assessment specialist. Analyze the following conversation messages from a language learner and determine their proficiency level in ${
+			languageNames[targetLanguage] || 'English'
+		}.
+
+User messages to analyze:
+${userMessages.map((msg, i) => `${i + 1}. "${msg.text}"`).join('\n')}
+
+Please analyze these aspects:
+1. **Grammar Accuracy**: Correct use of tenses, sentence structure, word order
+2. **Vocabulary Level**: Sophistication and variety of words used  
+3. **Sentence Complexity**: Simple vs compound vs complex sentences
+4. **Language Consistency**: Consistent use of the target language
+5. **Fluency Indicators**: Natural flow, idiom usage, cultural understanding
+6. **Error Patterns**: Types and frequency of mistakes
+
+Based on your analysis, assign ONE of these levels:
+- **Beginner**: Basic words, simple present tense, frequent errors, very short sentences
+- **Intermediate**: Mix of tenses, longer sentences, some complex vocabulary, occasional errors  
+- **Advanced**: Complex structures, sophisticated vocabulary, rare errors, natural expression
+- **Native**: Perfect or near-perfect grammar, idioms, cultural references, effortless expression
+
+Respond with a JSON object in this exact format:
+{
+  "level": "Beginner|Intermediate|Advanced|Native",
+  "confidence": 0.85,
+  "reasoning": "Detailed explanation of why you assigned this level",
+  "details": {
+    "grammarAccuracy": 85,
+    "vocabularyLevel": "Intermediate", 
+    "sentenceComplexity": "Complex",
+    "languageConsistency": "Excellent",
+    "strongPoints": ["Good use of past tense", "Varied vocabulary"],
+    "improvementAreas": ["Article usage", "Conditional sentences"],
+    "errorCount": 3,
+    "averageSentenceLength": 8.5
+  },
+  "levelProgression": {
+    "currentStage": "Early Intermediate",
+    "nextMilestone": "Master subjunctive mood", 
+    "estimatedProgress": "65%"
+  }
+}
+
+Your response must be valid JSON only. No additional text.`
+
+		try {
+			const response = await fetch('/api/claude', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ prompt: analysisPrompt }),
+			})
+
+			if (!response.ok)
+				throw new Error(`HTTP error! status: ${response.status}`)
+
+			const result = await response.json()
+
+			if (
+				!result.level ||
+				!['Beginner', 'Intermediate', 'Advanced', 'Native'].includes(
+					result.level
+				)
+			) {
+				console.warn('Invalid level from AI, using fallback')
+				return getFallbackAnalysis(userMessages.length)
+			}
+
+			return {
+				level: result.level,
+				confidence: result.confidence || 0.8,
+				reasoning: result.reasoning || 'AI analysis completed',
+				details: {
+					grammarAccuracy: result.details?.grammarAccuracy || 75,
+					vocabularyLevel: result.details?.vocabularyLevel || 'Basic',
+					sentenceComplexity:
+						result.details?.sentenceComplexity || 'Simple',
+					languageConsistency:
+						result.details?.languageConsistency || 'Good',
+					strongPoints: result.details?.strongPoints || [],
+					improvementAreas: result.details?.improvementAreas || [],
+					errorCount: result.details?.errorCount || 0,
+					averageSentenceLength:
+						result.details?.averageSentenceLength || 5,
+				},
+				levelProgression: result.levelProgression || {
+					currentStage: result.level,
+					nextMilestone: 'Continue practicing',
+					estimatedProgress: '50%',
+				},
+			}
+		} catch (error) {
+			console.error('Error in AI proficiency analysis:', error)
+			return getFallbackAnalysis(userMessages.length)
+		}
+	}
+
+	const getFallbackAnalysis = (messageCount) => {
+		let level = 'Beginner'
+		if (messageCount >= 15) level = 'Intermediate'
+		else if (messageCount >= 25) level = 'Advanced'
+
+		return {
+			level,
+			confidence: 0.6,
+			reasoning: 'Fallback analysis based on conversation length',
+			details: {
+				grammarAccuracy: 70,
+				vocabularyLevel: 'Basic',
+				sentenceComplexity: 'Simple',
+				languageConsistency: 'Good',
+				strongPoints: ['Active participation'],
+				improvementAreas: ['Continue practicing'],
+				errorCount: 2,
+				averageSentenceLength: 6,
+			},
+		}
 	}
 
 	const sendMessage = async () => {
@@ -307,8 +472,14 @@ const LanguageTutor = () => {
 
 		try {
 			const conversationHistory = [...messages, userMessage]
-			const detectedLevel = analyzeProficiencyLevel(conversationHistory)
-
+			setIsAnalyzing(true)
+			const proficiencyAnalysis = await analyzeLanguageProficiency(
+				conversationHistory,
+				selectedLanguage
+			)
+			const detectedLevel = proficiencyAnalysis.level
+			setDetailedAnalysis(proficiencyAnalysis)
+			setIsAnalyzing(false)
 			const prompt = `
 You are a friendly, encouraging language tutor helping someone learn ${
 				languages[selectedLanguage].name
@@ -850,6 +1021,129 @@ Your entire response MUST be valid JSON only. DO NOT include any text outside th
 								))}
 							</div>
 						)}
+					</div>
+				)}
+
+				{detailedAnalysis && (
+					<div className="p-4 border-b border-gray-200">
+						<h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+							<Brain className="h-5 w-5 mr-2" />
+							AI Language Analysis
+						</h3>
+
+						<div className="space-y-3">
+							{/* Level with confidence */}
+							<div className="flex justify-between items-center">
+								<span className="text-sm text-gray-600">
+									Current Level:
+								</span>
+								<div className="flex items-center space-x-2">
+									<span
+										className={`px-2 py-1 rounded-full text-xs font-medium ${getProficiencyColor(
+											detailedAnalysis.level
+										)}`}
+									>
+										{detailedAnalysis.level}
+									</span>
+									<span className="text-xs text-gray-500">
+										(
+										{Math.round(
+											detailedAnalysis.confidence * 100
+										)}
+										% confidence)
+									</span>
+								</div>
+							</div>
+
+							{/* Grammar accuracy */}
+							<div className="flex justify-between text-sm">
+								<span className="text-gray-600">
+									Grammar Accuracy:
+								</span>
+								<span className="font-medium">
+									{detailedAnalysis.details.grammarAccuracy}%
+								</span>
+							</div>
+
+							{/* Vocabulary level */}
+							<div className="flex justify-between text-sm">
+								<span className="text-gray-600">
+									Vocabulary Level:
+								</span>
+								<span className="font-medium">
+									{detailedAnalysis.details.vocabularyLevel}
+								</span>
+							</div>
+
+							{/* Sentence complexity */}
+							<div className="flex justify-between text-sm">
+								<span className="text-gray-600">
+									Sentence Complexity:
+								</span>
+								<span className="font-medium">
+									{
+										detailedAnalysis.details
+											.sentenceComplexity
+									}
+								</span>
+							</div>
+
+							{/* Strong points */}
+							{detailedAnalysis.details.strongPoints?.length >
+								0 && (
+								<div className="mt-3">
+									<p className="text-sm font-medium text-green-700 mb-1">
+										Strong Points:
+									</p>
+									<ul className="text-xs text-green-600 space-y-1">
+										{detailedAnalysis.details.strongPoints.map(
+											(point, index) => (
+												<li key={index}>• {point}</li>
+											)
+										)}
+									</ul>
+								</div>
+							)}
+
+							{/* Improvement areas */}
+							{detailedAnalysis.details.improvementAreas?.length >
+								0 && (
+								<div className="mt-3">
+									<p className="text-sm font-medium text-blue-700 mb-1">
+										Focus Areas:
+									</p>
+									<ul className="text-xs text-blue-600 space-y-1">
+										{detailedAnalysis.details.improvementAreas.map(
+											(area, index) => (
+												<li key={index}>• {area}</li>
+											)
+										)}
+									</ul>
+								</div>
+							)}
+
+							{/* Analysis reasoning - collapsible */}
+							<details className="mt-3">
+								<summary className="text-sm font-medium text-gray-700 cursor-pointer">
+									Analysis Details
+								</summary>
+								<p className="text-xs text-gray-600 mt-2 leading-relaxed">
+									{detailedAnalysis.reasoning}
+								</p>
+							</details>
+						</div>
+					</div>
+				)}
+
+				{/* Loading indicator during analysis */}
+				{isAnalyzing && (
+					<div className="p-4 border-b border-gray-200">
+						<div className="flex items-center space-x-2">
+							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+							<span className="text-sm text-gray-600">
+								Analyzing your language level...
+							</span>
+						</div>
 					</div>
 				)}
 
